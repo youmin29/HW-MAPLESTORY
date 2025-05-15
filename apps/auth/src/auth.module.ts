@@ -1,3 +1,14 @@
+/**
+File Name : auth.controller
+Description : Auth Server - Controller
+Author : 이유민
+
+History
+Date        Author      Status      Description
+2025.05.14  이유민      Created     
+2025.05.14  이유민      Modified    회원 기능 추가
+2025.05.15  이유민      Modified    코드 리팩토링
+*/
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
@@ -18,8 +29,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGO_URI),
-    MongooseModule.forFeature([{ name: Auth.name, schema: AuthSchema }]),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: Auth.name, schema: AuthSchema },
+      { name: User.name, schema: UserSchema },
+    ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
       secret: process.env.JWT_ACCESS_SECRET,
