@@ -1,3 +1,14 @@
+/**
+File Name : auth.dto
+Description : Auth Dto 정의
+Author : 이유민
+
+History
+Date        Author      Status      Description
+2025.05.14  이유민      Created     
+2025.05.14  이유민      Modified    회원 기능 추가
+2025.05.15  이유민      Modified    Enum 코드 추가
+*/
 import {
   IsEmail,
   IsString,
@@ -29,5 +40,5 @@ export class CreateAuthDto {
   @ApiProperty({ description: '사용자 역할' })
   @IsEnum(UserRole)
   @IsOptional()
-  role?: string;
+  role?: UserRole;
 }
