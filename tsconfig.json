@@ -18,18 +18,15 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@app/entity": [
-        "libs/entity/src"
-      ],
-      "@app/entity/*": [
-        "libs/entity/src/*"
-      ],
-      "@app/dto": [
-        "libs/dto/src"
-      ],
-      "@app/dto/*": [
-        "libs/dto/src/*"
-      ]
+      "@app/entity": ["libs/entity/src"],
+      "@app/entity/*": ["libs/entity/src/*"],
+      "@app/dto": ["libs/dto/src"],
+      "@app/dto/*": ["libs/dto/src/*"],
+      "@auth/*": ["apps/auth/src/*"],
+      "@event/*": ["apps/event/src/*"],
+      "@gateway/*": ["apps/gateway/src/*"],
+      "@app/*": ["apps/*"]
     }
-  }
+  },
+  "include": ["apps/**/*", "libs/**/*"]
 }
