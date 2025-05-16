@@ -7,10 +7,11 @@ History
 Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
+2025.05.16  이유민      Modified    트랜잭션 추가
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, ClientSession } from 'mongoose';
 import { Condition } from '@app/entity/event_condition.entity';
 
 // type RewardLean = EventReward & { _id: Types.ObjectId };
@@ -22,7 +23,17 @@ export class ConditionRepository {
     private conditionModel: Model<Condition>,
   ) {}
 
-  async createCondition(conditionData: Partial<Condition>): Promise<Condition> {
-    return await new this.conditionModel(conditionData).save();
+  async createCondition(
+    conditionData: Partial<Condition>,
+    session: ClientSession,
+  ): Promise<Condition> {
+    return await new this.conditionModel(conditionData).save({ session });
+  }
+  async deleteConditionsByTarget(
+    target: Partial<Condition>,
+    session: ClientSession,
+  ): Promise<object> {
+    await this.conditionModel.deleteMany(target, { session });
+    return { message: '성공적으로 삭제되었습니다.' };
   }
 }
