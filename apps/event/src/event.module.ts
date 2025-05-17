@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
+2025.05.16  이유민      Modified    보상 요청 기능 추가
 */
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -28,6 +29,13 @@ import {
   EventReward,
   EventRewardSchema,
 } from '@app/entity/event_reward.entity';
+import {
+  Attendance,
+  AttendanceSchema,
+} from '@app/entity/attendance_log.entity';
+import { AttendanceRepository } from './repository/attendance_log.repository';
+import { RequestRepository } from './repository/event_reward_requests.repository';
+import { AuthModule } from '@auth/auth.module';
 
 @Module({
   imports: [
@@ -41,7 +49,9 @@ import {
       { name: EventReward.name, schema: EventRewardSchema },
       { name: Item.name, schema: ItemSchema },
       { name: Condition.name, schema: ConditionSchema },
+      { name: Attendance.name, schema: AttendanceSchema },
     ]),
+    AuthModule,
   ],
   controllers: [EventController],
   providers: [
@@ -50,6 +60,8 @@ import {
     EventRewardRepository,
     ItemRepository,
     ConditionRepository,
+    AttendanceRepository,
+    RequestRepository,
   ],
 })
 export class EventModule {}

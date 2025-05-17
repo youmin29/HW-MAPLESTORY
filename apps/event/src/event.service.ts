@@ -8,20 +8,32 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    트랜잭션 추가
+2025.05.16  이유민      Modified    보상 요청 기능 추가
 */
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { isValidObjectId, Connection } from 'mongoose';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Connection, Types } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
 import { EventRepository } from './repository/event.repository';
 import { EventRewardRepository } from './repository/event_reward.repository';
 import { ItemRepository } from './repository/item.repository';
 import { ConditionRepository } from './repository/event_condition.repository';
-import { CreateEventDto, UpdateEventDto } from '@app/dto';
+import { CreateEventDto, GetRequestQueryDto, UpdateEventDto } from '@app/dto';
 import {
   validateObjectIdOrThrow,
   validateObjectPropertyIdsOrThrow,
 } from '@app/utils/validation';
-import { getRepositoryByConditionType } from './event.service.utils';
+import {
+  checkAttendEvent,
+  getRepositoryByConditionType,
+} from './event.service.utils';
+import { ConditionType } from '@app/entity/event_condition.entity';
+import { AttendanceRepository } from './repository/attendance_log.repository';
+import { RequestRepository } from './repository/event_reward_requests.repository';
 
 @Injectable()
 export class EventService {
@@ -31,6 +43,8 @@ export class EventService {
     private readonly eventRewardRepository: EventRewardRepository,
     private readonly itemRepository: ItemRepository,
     private readonly conditionRepository: ConditionRepository,
+    private readonly attendanceRepository: AttendanceRepository,
+    private readonly requestRepository: RequestRepository,
   ) {}
 
   async create(eventAndRewardData: CreateEventDto) {
@@ -45,7 +59,7 @@ export class EventService {
       condition.map(async (e) => {
         await getRepositoryByConditionType({
           type: e.type,
-          target_id: e.target_id,
+          target_id: e.target_id ? new Types.ObjectId(e.target_id) : null,
           itemRepository: this.itemRepository,
         });
       }),
@@ -64,7 +78,7 @@ export class EventService {
           session,
         );
 
-        const event_id = newEvent._id.toString();
+        const event_id = newEvent._id as Types.ObjectId;
 
         // reward 데이터 생성
         await Promise.all(
@@ -72,6 +86,7 @@ export class EventService {
             await this.eventRewardRepository.createReward(
               {
                 ...e,
+                item_id: new Types.ObjectId(e.item_id),
                 event_id,
               },
               session,
@@ -85,6 +100,7 @@ export class EventService {
               {
                 ...e,
                 event_id,
+                target_id: e.target_id ? new Types.ObjectId(e.target_id) : null,
               },
               session,
             );
@@ -107,35 +123,71 @@ export class EventService {
   }
 
   async findEventById(id: string) {
-    if (!isValidObjectId(id)) {
-      throw new BadRequestException('유효하지 않은 id입니다.');
-    }
+    // 유효성 검사
+    validateObjectIdOrThrow(id);
 
     const eventData = await this.eventRepository.findEventById(id);
+    if (!eventData) throw new NotFoundException('리소스를 찾을 수 없습니다.');
+
+    const event_id = new Types.ObjectId(id);
 
     const rewardList = await this.eventRewardRepository.findByFilters({
-      event_id: eventData._id.toString(),
+      event_id,
     });
-    return { eventData, rewardList };
+
+    // conditionList 관련
+    const conditionList =
+      await this.conditionRepository.findConditionsByFilters({ event_id });
+
+    const targetList = [];
+    await Promise.all(
+      conditionList.map(async (e) => {
+        const targetInfo = await getRepositoryByConditionType({
+          type: e.type,
+          target_id: e.target_id ? new Types.ObjectId(e.target_id) : null,
+          itemRepository: this.itemRepository,
+        });
+        if (Object.keys(targetInfo).length !== 0) targetList.push(targetInfo);
+      }),
+    );
+
+    for (const condition of conditionList) {
+      if (condition.target_id !== null) {
+        const matchedTarget = targetList.find(
+          (target) => target._id.toString() === condition.target_id.toString(),
+        );
+        condition.target_id = matchedTarget;
+      }
+    }
+
+    return { eventData, rewardList, conditionList };
   }
 
   async updateEventById(id: string, updateData: UpdateEventDto) {
-    const { event, reward } = updateData;
+    const { event, condition, reward } = updateData;
 
-    if (!isValidObjectId(id)) {
-      throw new BadRequestException('유효하지 않은 id입니다.');
+    // 유효성 검사
+    if (!(await this.eventRepository.findEventById(id))) {
+      throw new NotFoundException('리소스를 찾을 수 없습니다.');
     }
+    validateObjectIdOrThrow(id);
+    validateObjectPropertyIdsOrThrow(condition, 'target_id');
+    validateObjectPropertyIdsOrThrow(reward, 'item_id');
 
     const session = await this.connection.startSession();
     try {
       await session.withTransaction(async () => {
+        const event_id = new Types.ObjectId(id);
+
         const beforeReward = await this.eventRewardRepository.findByFilters({
-          event_id: id,
+          event_id,
         }); // 현재 보상 데이터 가져오기
 
         const rewardToInsert = []; // 추가되는 보상 데이터
         const rewardToUpdate = []; // 수정되는 보상 데이터
         const rewardToDelete = []; // 삭제되는 보상 데이터
+
+        // TODO: 코드 정리 및 condition 추가
 
         const newRewardIds = reward
           .filter((e) => e.reward_id !== null)
@@ -151,7 +203,7 @@ export class EventService {
             rewardToInsert.push({
               item_id: rw.item_id,
               amount: rw.amount,
-              event_id: id,
+              event_id,
             });
           } else {
             rewardToUpdate.push({ ...rw });
@@ -209,27 +261,34 @@ export class EventService {
           );
         }
       });
-      session.endSession();
+
+      await session.commitTransaction();
       return { message: '성공적으로 수정되었습니다.' };
     } catch (error) {
-      session.endSession();
+      await session.abortTransaction();
       throw error;
+    } finally {
+      session.endSession();
     }
   }
 
   async deleteEventById(id: string) {
     validateObjectIdOrThrow(id);
+    if (!(await this.eventRepository.findEventById(id)))
+      throw new BadRequestException('리소스를 찾을 수 없습니다.');
+
+    const event_id = new Types.ObjectId(id);
 
     const session = await this.connection.startSession();
     try {
       await session.withTransaction(async () => {
         await this.eventRepository.deleteEventById(id, session);
         await this.eventRewardRepository.deleteRewardsByTarget(
-          { event_id: id },
+          { event_id },
           session,
         );
         await this.conditionRepository.deleteConditionsByTarget(
-          { event_id: id },
+          { event_id },
           session,
         );
       });
@@ -242,5 +301,84 @@ export class EventService {
     } finally {
       session.endSession();
     }
+  }
+
+  async createRequestReward(id: string, userId: string) {
+    validateObjectIdOrThrow(id);
+
+    if (!(await this.eventRepository.findEventById(id)))
+      throw new BadRequestException('리소스를 찾을 수 없습니다.');
+
+    const event_id = new Types.ObjectId(id);
+    const user_id = new Types.ObjectId(userId);
+
+    const isRequest = await this.requestRepository.findOneByFilter({
+      user_id,
+      event_id,
+      status: true,
+    });
+
+    if (isRequest) throw new ForbiddenException('이미 보상을 수령했습니다.');
+
+    const conditionList =
+      await this.conditionRepository.findConditionsByFilters({ event_id });
+
+    await Promise.all(
+      conditionList.map(async (condition) => {
+        if (condition.type === ConditionType.ATTEND) {
+          const validEvent = await checkAttendEvent(
+            condition.quantity,
+            user_id,
+            this.attendanceRepository,
+          );
+
+          if (!validEvent) {
+            await this.requestRepository.create({
+              event_id,
+              user_id,
+              status: false,
+            });
+            throw new ForbiddenException('이벤트 조건이 충족되지 않았습니다.');
+          }
+        }
+      }),
+    );
+
+    await this.requestRepository.create({ event_id, user_id, status: true });
+    return { message: '보상이 지급되었습니다.' };
+  }
+
+  async findRewardRequestAll(query: GetRequestQueryDto) {
+    const filter: any = {};
+
+    if (query.status) filter.status = query.status;
+    if (query.eventId) {
+      validateObjectIdOrThrow(query.eventId);
+      filter.event_id = new Types.ObjectId(query.eventId);
+    }
+    if (query.userId) {
+      validateObjectIdOrThrow(query.userId);
+      filter.user_id = new Types.ObjectId(query.userId);
+    }
+
+    const sortBy = query.sortBy === 'createdAt' ? query.sortBy : 'event_id';
+    const sortOrder = query.order === 'asc' ? 1 : -1;
+
+    const requestList = await this.requestRepository.findByFilter(filter, {
+      [sortBy]: sortOrder,
+    });
+
+    return requestList;
+  }
+
+  async findUserRewardRequest(target_id: string, query: GetRequestQueryDto) {
+    validateObjectIdOrThrow(target_id);
+
+    const requestList = await this.findRewardRequestAll({
+      ...query,
+      userId: target_id,
+    });
+
+    return { requestList };
   }
 }
