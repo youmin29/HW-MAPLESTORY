@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
-import { GatewayController } from './gateway.controller';
-import { GatewayService } from './gateway.service';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from 'apps/auth/src/auth.module';
-import { EventModule } from 'apps/event/src/event.module';
+import { HttpModule } from '@nestjs/axios';
+import { AuthController } from './controllers/auth.controller';
+import { AuthService } from './services/auth.service';
+import { EventController } from './controllers/event.controller';
+import { EventService } from './services/event.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -12,10 +14,9 @@ import { EventModule } from 'apps/event/src/event.module';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGO_URI),
-    AuthModule,
-    EventModule,
+    HttpModule,
   ],
-  controllers: [GatewayController],
-  providers: [GatewayService],
+  controllers: [AuthController, EventController],
+  providers: [AuthService, EventService, JwtStrategy],
 })
 export class GatewayModule {}
