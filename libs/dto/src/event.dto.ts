@@ -7,9 +7,9 @@ History
 Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
+2025.05.16  이유민      Modified    Mongoose ref 설정 추가
 */
 import {
-  IsString,
   IsNumber,
   IsBoolean,
   ValidateNested,
@@ -17,12 +17,19 @@ import {
   IsDateString,
   IsOptional,
   IsArray,
+  IsMongoId,
+  IsIn,
+  IsString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ConditionType } from '@app/entity/event_condition.entity';
 
 export class CreateEventInfoDto {
+  @ApiProperty({ description: '이벤트 제목' })
+  @IsString()
+  title: string;
+
   @ApiProperty({ description: '이벤트 시작 날짜' })
   @IsDateString()
   start_date: string;
@@ -38,7 +45,7 @@ export class CreateEventInfoDto {
 
 export class CreateRewardDto {
   @ApiProperty({ description: '보상 아이템 ID' })
-  @IsString()
+  @IsMongoId()
   item_id: string;
 
   @ApiProperty({ description: '보상 아이템 수량' })
@@ -52,7 +59,7 @@ export class CreateConditionDto {
   type: ConditionType;
 
   @ApiProperty({ description: '이벤트 달성에 필요한 아이템' })
-  @IsString()
+  @IsMongoId()
   @IsOptional()
   target_id?: string;
 
@@ -64,12 +71,12 @@ export class CreateConditionDto {
 
 export class UpdateRewardDto {
   @ApiProperty({ description: '보상 ID' })
-  @IsString()
+  @IsMongoId()
   @IsOptional()
   reward_id?: string;
 
   @ApiProperty({ description: '보상 아이템 ID' })
-  @IsString()
+  @IsMongoId()
   item_id: string;
 
   @ApiProperty({ description: '보상 아이템 수량' })
@@ -131,4 +138,30 @@ export class UpdateEventDto {
   @Type(() => UpdateRewardDto)
   @IsArray()
   reward: UpdateRewardDto[];
+}
+
+export class GetRequestQueryDto {
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  eventId?: string;
+
+  @IsOptional()
+  @IsString()
+  userId?: string;
+
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @IsOptional()
+  @IsIn(['createdAt', 'eventId'])
+  sortBy?: string = 'createdAt';
+
+  @IsOptional()
+  @IsIn(['asc', 'desc'])
+  order?: string = 'desc';
 }

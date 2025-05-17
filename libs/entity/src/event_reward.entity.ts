@@ -7,19 +7,22 @@ History
 Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가 
+2025.05.16  이유민      Modified    Mongoose ref 설정 추가
 */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { EventInfo } from './event_info.entity';
+import { Item } from './item.entity';
+import { Document, Types } from 'mongoose';
 
 export type EventRewardDocument = EventReward & Document;
 
 @Schema({ timestamps: true, collection: 'event_reward' })
 export class EventReward {
-  @Prop({ required: true })
-  event_id: string;
+  @Prop({ required: true, type: Types.ObjectId, ref: EventInfo.name })
+  event_id: Types.ObjectId;
 
-  @Prop({ required: true })
-  item_id: string;
+  @Prop({ required: true, type: Types.ObjectId, ref: Item.name })
+  item_id: Types.ObjectId;
 
   @Prop({ required: true })
   amount: number;
