@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.14  이유민      Created     
 2025.05.14  이유민      Modified    회원 기능 추가
 2025.05.15  이유민      Modified    코드 리팩토링
+2025.05.17  이유민      Modified    코드 리팩토링
 */
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -21,7 +22,6 @@ import { User, UserSchema } from '@app/entity/user.entity';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { LocalServiceStrategy } from './strategies/local-service.strategy';
-import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -45,7 +45,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthRepository,
     UserRepository,
     LocalServiceStrategy,
-    JwtStrategy,
   ],
   exports: [AuthService],
 })

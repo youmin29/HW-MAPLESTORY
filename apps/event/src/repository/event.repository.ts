@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    트랜잭션 추가
+2025.05.16  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -47,7 +48,6 @@ export class EventRepository {
   }
 
   async deleteEventById(id: string, session: ClientSession): Promise<object> {
-    await this.eventModel.findByIdAndDelete(id, { session });
-    return { message: '성공적으로 삭제되었습니다.' };
+    return await this.eventModel.findByIdAndDelete(id, { session });
   }
 }

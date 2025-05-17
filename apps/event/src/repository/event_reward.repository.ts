@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    트랜잭션 추가
+2025.05.16  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -33,7 +34,11 @@ export class EventRewardRepository {
   async findByFilters(
     filters: Partial<EventReward>,
   ): Promise<RewardLean[] | null> {
-    return await this.rewardModel.find(filters).lean();
+    return await this.rewardModel
+      .find(filters)
+      .populate('item_id')
+      .lean()
+      .exec();
   }
 
   async updateRewardById(

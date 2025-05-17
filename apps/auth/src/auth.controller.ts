@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.14  이유민      Created     
 2025.05.14  이유민      Modified    회원 기능 추가
+2025.05.17  이유민      Modified    코드 리팩토링
 */
 import {
   Controller,
@@ -27,7 +28,7 @@ import { AuthGuard } from '@nestjs/passport';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
+  @Post('signup')
   @ApiOperation({
     summary: '회원가입 API',
   })
@@ -56,7 +57,7 @@ export class AuthController {
     });
   }
 
-  @Post('login')
+  @Post('signin')
   @UseGuards(LocalAuthGuard)
   @ApiOperation({
     summary: '로그인 API',
