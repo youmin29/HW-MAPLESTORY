@@ -7,24 +7,23 @@ History
 Date        Author      Status      Description
 2025.05.14  이유민      Created     
 2025.05.14  이유민      Modified    회원 기능 추가
+2025.05.18  이유민      Modified    트랙잭션 추가
 */
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { AuthRepository } from './repository/auth.repository';
 import { UserRepository } from './repository/user.repository';
-import { Auth } from '@app/entity/auth.entity';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 
 @Injectable()
 export class AuthService {
-  getHello(): string {
-    return 'Hello World!';
-  }
-
   constructor(
+    @InjectConnection() private readonly connection: Connection,
+    private jwtService: JwtService,
     private readonly authRepository: AuthRepository,
     private readonly userRepository: UserRepository,
-    private jwtService: JwtService,
   ) {}
 
   async create({
@@ -39,16 +38,31 @@ export class AuthService {
     name: string;
     phone: string;
     role: string;
-  }): Promise<Auth> {
-    const newUser = await this.userRepository.create({
-      name,
-      phone,
-      role,
-    });
+  }) {
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const newUser = await this.userRepository.create(
+          {
+            name,
+            phone,
+            role,
+          },
+          session,
+        );
 
-    const user_id = newUser._id.toString();
+        const user_id = newUser._id.toString();
 
-    return this.authRepository.create({ email, password }, user_id);
+        await this.authRepository.create({ email, password }, user_id, session);
+      });
+      await session.commitTransaction();
+      return;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 
   async validateServiceUser(email: string, password: string): Promise<any> {
@@ -72,7 +86,19 @@ export class AuthService {
     return { token: this.jwtService.sign(payload) };
   }
 
-  async changeUserRole(user_id: string, role: string): Promise<object> {
-    return this.userRepository.updateUserById(user_id, { role });
+  async changeUserRole(user_id: string, role: string) {
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        return this.userRepository.updateUserById(user_id, { role }, session);
+      });
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      return { message: '수정되었습니다.' };
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 }
