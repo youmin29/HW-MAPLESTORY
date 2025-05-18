@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가 
 2025.05.16  이유민      Modified    Mongoose ref 설정 추가
+2025.05.16  이유민      Modified    속성 추가
 */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { EventInfo } from './event_info.entity';
@@ -26,6 +27,9 @@ export class EventRewardRequest {
 
   @Prop({ required: true })
   status: boolean;
+
+  @Prop({ required: false })
+  reason: string;
 }
 
 export const EventRewardRequestSchema =
