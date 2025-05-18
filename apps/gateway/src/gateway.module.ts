@@ -7,6 +7,8 @@ import { AuthService } from './services/auth.service';
 import { EventController } from './controllers/event.controller';
 import { EventService } from './services/event.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -14,9 +16,25 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGO_URI),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 10000,
+          limit: 3,
+        },
+      ],
+    }),
     HttpModule,
   ],
   controllers: [AuthController, EventController],
-  providers: [AuthService, EventService, JwtStrategy],
+  providers: [
+    AuthService,
+    EventService,
+    JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class GatewayModule {}
