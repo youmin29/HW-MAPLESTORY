@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    보상 요청 기능 추가
+2025.05.18  이유민      Modified    인벤토리 추가
 */
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -35,7 +36,9 @@ import {
 } from '@app/entity/attendance_log.entity';
 import { AttendanceRepository } from './repository/attendance_log.repository';
 import { RequestRepository } from './repository/event_reward_requests.repository';
-import { AuthModule } from '@auth/auth.module';
+import { Inventory, InventorySchema } from '@app/entity/inventory.entity';
+import { InventoryRepository } from './repository/inventory.repository';
+import { User, UserSchema } from '@app/entity';
 
 @Module({
   imports: [
@@ -50,8 +53,9 @@ import { AuthModule } from '@auth/auth.module';
       { name: Item.name, schema: ItemSchema },
       { name: Condition.name, schema: ConditionSchema },
       { name: Attendance.name, schema: AttendanceSchema },
+      { name: Inventory.name, schema: InventorySchema },
+      { name: User.name, schema: UserSchema },
     ]),
-    AuthModule,
   ],
   controllers: [EventController],
   providers: [
@@ -62,6 +66,7 @@ import { AuthModule } from '@auth/auth.module';
     ConditionRepository,
     AttendanceRepository,
     RequestRepository,
+    InventoryRepository,
   ],
 })
 export class EventModule {}
