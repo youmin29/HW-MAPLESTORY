@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    트랜잭션 추가
 2025.05.16  이유민      Modified    보상 요청 기능 추가
+2025.05.18  이유민      Modified    이벤트 정보 수정 변경
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -37,8 +38,17 @@ export class ConditionRepository {
     return await this.conditionModel.find(filters).lean();
   }
 
+  async updateConditionsById(
+    id: string,
+    updateData: Partial<Condition>,
+    session: ClientSession,
+  ): Promise<object> {
+    await this.conditionModel.findByIdAndUpdate(id, updateData, { session });
+    return { message: '성공적으로 수정되었습니다.' };
+  }
+
   async deleteConditionsByTarget(
-    target: Partial<Condition>,
+    target: Partial<ConditionLean>,
     session: ClientSession,
   ): Promise<object> {
     await this.conditionModel.deleteMany(target, { session });

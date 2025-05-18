@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    트랜잭션 추가
 2025.05.16  이유민      Modified    보상 요청 기능 추가
+2025.05.18  이유민      Modified    이벤트 정보 수정 변경
 */
 import {
   BadRequestException,
@@ -28,12 +29,15 @@ import {
   validateObjectPropertyIdsOrThrow,
 } from '@app/utils/validation';
 import {
-  checkAttendEvent,
-  getRepositoryByConditionType,
+  existsByConditionTargetId,
+  isModified,
+  processBatch,
+  validateEventCondition,
 } from './event.service.utils';
-import { ConditionType } from '@app/entity/event_condition.entity';
 import { AttendanceRepository } from './repository/attendance_log.repository';
 import { RequestRepository } from './repository/event_reward_requests.repository';
+import { endOfDay, startOfDay } from 'date-fns';
+import { InventoryRepository } from './repository/inventory.repository';
 
 @Injectable()
 export class EventService {
@@ -45,6 +49,7 @@ export class EventService {
     private readonly conditionRepository: ConditionRepository,
     private readonly attendanceRepository: AttendanceRepository,
     private readonly requestRepository: RequestRepository,
+    private readonly inventoryRepository: InventoryRepository,
   ) {}
 
   async create(eventAndRewardData: CreateEventDto) {
@@ -57,7 +62,7 @@ export class EventService {
     // target_id 확인
     await Promise.all(
       condition.map(async (e) => {
-        await getRepositoryByConditionType({
+        await existsByConditionTargetId({
           type: e.type,
           target_id: e.target_id ? new Types.ObjectId(e.target_id) : null,
           itemRepository: this.itemRepository,
@@ -142,7 +147,7 @@ export class EventService {
     const targetList = [];
     await Promise.all(
       conditionList.map(async (e) => {
-        const targetInfo = await getRepositoryByConditionType({
+        const targetInfo = await existsByConditionTargetId({
           type: e.type,
           target_id: e.target_id ? new Types.ObjectId(e.target_id) : null,
           itemRepository: this.itemRepository,
@@ -179,36 +184,24 @@ export class EventService {
       await session.withTransaction(async () => {
         const event_id = new Types.ObjectId(id);
 
-        const beforeReward = await this.eventRewardRepository.findByFilters({
-          event_id,
-        }); // 현재 보상 데이터 가져오기
+        // 현재 데이터 가져오기
+        const beforeReward = await this.eventRewardRepository.findByFilters(
+          {
+            event_id,
+          },
+          false,
+        );
+        const beforeCondition =
+          await this.conditionRepository.findConditionsByFilters({
+            event_id,
+          });
 
-        const rewardToInsert = []; // 추가되는 보상 데이터
-        const rewardToUpdate = []; // 수정되는 보상 데이터
-        const rewardToDelete = []; // 삭제되는 보상 데이터
-
-        // TODO: 코드 정리 및 condition 추가
-
-        const newRewardIds = reward
-          .filter((e) => e.reward_id !== null)
-          .map((e) => e.reward_id);
-
-        for (const rw of beforeReward) {
-          if (!newRewardIds.includes(rw._id.toString()))
-            rewardToDelete.push(rw._id.toString());
-        }
-
-        for (const rw of reward) {
-          if (rw.reward_id === null) {
-            rewardToInsert.push({
-              item_id: rw.item_id,
-              amount: rw.amount,
-              event_id,
-            });
-          } else {
-            rewardToUpdate.push({ ...rw });
-          }
-        }
+        const rewardModified = isModified(beforeReward, reward, 'reward_id');
+        const conditionModified = isModified(
+          beforeCondition,
+          condition,
+          'condition_id',
+        );
 
         // 데이터 반영
         // 이벤트 데이터 수정
@@ -222,44 +215,48 @@ export class EventService {
           session,
         );
 
-        // 추가
-        if (rewardToInsert.length > 0) {
-          await Promise.all(
-            rewardToInsert.map(async (e) => {
-              await this.eventRewardRepository.createReward(
-                {
-                  ...e,
-                },
-                session,
-              );
-            }),
+        // 보상 데이터
+        await processBatch(rewardModified.dataToInsert, async (e) => {
+          await this.eventRewardRepository.createReward(
+            { ...e, item_id: new Types.ObjectId(e.item_id), event_id },
+            session,
           );
-        }
+        });
 
-        // 수정
-        if (rewardToUpdate.length > 0) {
-          await Promise.all(
-            rewardToUpdate.map(async (e) => {
-              await this.eventRewardRepository.updateRewardById(
-                e.reward_id,
-                {
-                  item_id: e.item_id,
-                  amount: e.amount,
-                },
-                session,
-              );
-            }),
+        await processBatch(rewardModified.dataToUpdate, async (e) => {
+          await this.eventRewardRepository.updateRewardById(
+            e.reward_id,
+            { item_id: new Types.ObjectId(e.item_id), amount: e.amount },
+            session,
           );
-        }
+        });
 
-        // 삭제
-        if (rewardToDelete.length > 0) {
-          await Promise.all(
-            rewardToDelete.map(async (e) => {
-              await this.eventRewardRepository.deleteRewardById(e, session);
-            }),
+        await processBatch(rewardModified.dataToDelete, async (e) => {
+          await this.eventRewardRepository.deleteRewardById(e, session);
+        });
+
+        // 조건 데이터
+        await processBatch(conditionModified.dataToInsert, async (e) => {
+          await this.conditionRepository.createCondition(
+            { ...e, event_id },
+            session,
           );
-        }
+        });
+
+        await processBatch(conditionModified.dataToUpdate, async (e) => {
+          await this.conditionRepository.updateConditionsById(
+            e.condition_id,
+            { ...e, target_id: new Types.ObjectId(e.target_id) },
+            session,
+          );
+        });
+
+        await processBatch(conditionModified.dataToDelete, async (e) => {
+          await this.conditionRepository.deleteConditionsByTarget(
+            { _id: new Types.ObjectId(e) },
+            session,
+          );
+        });
       });
 
       await session.commitTransaction();
@@ -303,10 +300,14 @@ export class EventService {
     }
   }
 
-  async createRequestReward(id: string, userId: string) {
-    validateObjectIdOrThrow(id);
+  async requestEventReward(id: string, userId: string) {
+    if (!userId) throw new ForbiddenException('로그인 후 이용 가능합니다.');
 
-    if (!(await this.eventRepository.findEventById(id)))
+    validateObjectIdOrThrow(id);
+    validateObjectIdOrThrow(userId);
+
+    const isEvent = await this.eventRepository.findEventById(id);
+    if (!isEvent || !isEvent.status)
       throw new BadRequestException('리소스를 찾을 수 없습니다.');
 
     const event_id = new Types.ObjectId(id);
@@ -318,31 +319,35 @@ export class EventService {
       status: true,
     });
 
-    if (isRequest) throw new ForbiddenException('이미 보상을 수령했습니다.');
+    if (isRequest) {
+      await this.requestRepository.create({
+        event_id,
+        user_id,
+        status: false,
+        reason: '이미 보상을 수령했습니다.',
+      });
+      throw new ForbiddenException('이미 보상을 수령했습니다.');
+    }
 
     const conditionList =
       await this.conditionRepository.findConditionsByFilters({ event_id });
 
-    await Promise.all(
-      conditionList.map(async (condition) => {
-        if (condition.type === ConditionType.ATTEND) {
-          const validEvent = await checkAttendEvent(
-            condition.quantity,
-            user_id,
-            this.attendanceRepository,
-          );
+    const validEvent = await validateEventCondition({
+      user_id,
+      conditionList,
+      attendRepository: this.attendanceRepository,
+      inventoryRepository: this.inventoryRepository,
+    });
 
-          if (!validEvent) {
-            await this.requestRepository.create({
-              event_id,
-              user_id,
-              status: false,
-            });
-            throw new ForbiddenException('이벤트 조건이 충족되지 않았습니다.');
-          }
-        }
-      }),
-    );
+    if (!validEvent) {
+      await this.requestRepository.create({
+        event_id,
+        user_id,
+        status: false,
+        reason: '이벤트 조건이 충족되지 않았습니다.',
+      });
+      throw new ForbiddenException('이벤트 조건이 충족되지 않았습니다.');
+    }
 
     await this.requestRepository.create({ event_id, user_id, status: true });
     return { message: '보상이 지급되었습니다.' };
@@ -380,5 +385,22 @@ export class EventService {
     });
 
     return { requestList };
+  }
+
+  async createAttendance(user_id: string) {
+    if (!user_id) throw new ForbiddenException('로그인 후 이용 가능합니다.');
+
+    const today = new Date();
+
+    const start = startOfDay(today);
+    const end = endOfDay(today);
+
+    const isAttend = await this.attendanceRepository.findByToday(start, end);
+    if (isAttend) throw new ForbiddenException('');
+
+    return await this.attendanceRepository.createAttend({
+      user_id: new Types.ObjectId(user_id),
+      date: new Date(),
+    });
   }
 }
