@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.17  이유민      Created     
 2025.05.17  이유민      Modified    Gateway 라우팅 추가
 2025.05.17  이유민      Modified    출석체크 기능 추가
+2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 */
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -89,7 +90,7 @@ export class EventService {
   ) {
     if (user.role === UserRole.User) {
       if (user.user_id !== target_id)
-        throw new ForbiddenException('권한이 없습니다.');
+        throw new ForbiddenException('해당 작업을 수행할 권한이 없습니다.');
     }
 
     let queryStr = '';

@@ -8,8 +8,9 @@ Date        Author      Status      Description
 2025.05.14  이유민      Created     
 2025.05.14  이유민      Modified    회원 기능 추가
 2025.05.18  이유민      Modified    트랙잭션 추가
+2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 */
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthRepository } from './repository/auth.repository';
 import { UserRepository } from './repository/user.repository';
 import * as bcrypt from 'bcrypt';
@@ -68,14 +69,22 @@ export class AuthService {
   async validateServiceUser(email: string, password: string): Promise<any> {
     const auth = await this.authRepository.findOneByEmail(email);
 
-    if (!auth) throw new ForbiddenException('접근할 수 없습니다.');
+    if (!auth)
+      throw new UnauthorizedException(
+        '입력한 이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
 
     if (!(await bcrypt.compare(password, auth.password)))
-      throw new ForbiddenException('비밀번호가 일치하지 않습니다.');
+      throw new UnauthorizedException(
+        '입력한 이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
 
     const user = await this.userRepository.findOneById(auth.user_id);
 
-    if (!user) throw new ForbiddenException();
+    if (!user)
+      throw new UnauthorizedException(
+        '입력한 이메일 또는 비밀번호가 올바르지 않습니다.',
+      );
 
     const payload = {
       user_id: auth.user_id,
@@ -93,9 +102,9 @@ export class AuthService {
         return this.userRepository.updateUserById(user_id, { role }, session);
       });
       await session.commitTransaction();
+      return { message: '수정되었습니다.' };
     } catch (error) {
       await session.abortTransaction();
-      return { message: '수정되었습니다.' };
       throw error;
     } finally {
       session.endSession();

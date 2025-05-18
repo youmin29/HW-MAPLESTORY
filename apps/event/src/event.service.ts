@@ -10,12 +10,14 @@ Date        Author      Status      Description
 2025.05.16  이유민      Modified    트랜잭션 추가
 2025.05.16  이유민      Modified    보상 요청 기능 추가
 2025.05.18  이유민      Modified    이벤트 정보 수정 변경
+2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 */
 import {
   BadRequestException,
-  ForbiddenException,
+  ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Connection, Types } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
@@ -301,7 +303,7 @@ export class EventService {
   }
 
   async requestEventReward(id: string, userId: string) {
-    if (!userId) throw new ForbiddenException('로그인 후 이용 가능합니다.');
+    if (!userId) throw new UnauthorizedException('로그인 후 이용 가능합니다.');
 
     validateObjectIdOrThrow(id);
     validateObjectIdOrThrow(userId);
@@ -326,7 +328,7 @@ export class EventService {
         status: false,
         reason: '이미 보상을 수령했습니다.',
       });
-      throw new ForbiddenException('이미 보상을 수령했습니다.');
+      throw new ConflictException('이미 보상을 수령했습니다.');
     }
 
     const conditionList =
@@ -346,7 +348,7 @@ export class EventService {
         status: false,
         reason: '이벤트 조건이 충족되지 않았습니다.',
       });
-      throw new ForbiddenException('이벤트 조건이 충족되지 않았습니다.');
+      throw new BadRequestException('이벤트 조건이 충족되지 않았습니다.');
     }
 
     await this.requestRepository.create({ event_id, user_id, status: true });
@@ -388,7 +390,7 @@ export class EventService {
   }
 
   async createAttendance(user_id: string) {
-    if (!user_id) throw new ForbiddenException('로그인 후 이용 가능합니다.');
+    if (!user_id) throw new UnauthorizedException('로그인 후 이용 가능합니다.');
 
     const today = new Date();
 
@@ -396,7 +398,7 @@ export class EventService {
     const end = endOfDay(today);
 
     const isAttend = await this.attendanceRepository.findByToday(start, end);
-    if (isAttend) throw new ForbiddenException('');
+    if (isAttend) throw new ConflictException('오늘은 이미 출석하셨습니다.');
 
     return await this.attendanceRepository.createAttend({
       user_id: new Types.ObjectId(user_id),

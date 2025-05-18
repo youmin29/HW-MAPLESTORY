@@ -9,8 +9,9 @@ Date        Author      Status      Description
 2025.05.16  이유민      Modified    이벤트 유틸리티 함수 추가
 2025.05.16  이유민      Modified    보상 요청 기능 추가
 2025.05.18  이유민      Modified    이벤트 정보 수정 변경
+2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 */
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ItemRepository } from './repository/item.repository';
 import { AttendanceRepository } from './repository/attendance_log.repository';
 import { InventoryRepository } from './repository/inventory.repository';
@@ -47,15 +48,14 @@ export async function existsByConditionTargetId({
       break;
     case ConditionType.ITEM:
       validItem = await itemRepository.findOneById(target_id);
-      if (!validItem)
-        throw new BadRequestException('존재하지 않는 리소스입니다.');
+      if (!validItem) throw new NotFoundException('리소스를 찾을 수 없습니다.');
       break;
     case ConditionType.BOSS:
       break;
     case ConditionType.INVITE:
       break;
     default:
-      throw new BadRequestException(`알 수 없는 type: ${type}`);
+      throw new BadRequestException(`${type}는 알 수 없는 타입입니다.`);
   }
 
   return validItem;
@@ -93,7 +93,9 @@ export async function validateEventCondition(
       case ConditionType.INVITE:
         break;
       default:
-        throw new BadRequestException(`알 수 없는 type: ${condition.type}`);
+        throw new BadRequestException(
+          `${condition.type}는 알 수 없는 타입입니다.`,
+        );
     }
   }
   return true;
