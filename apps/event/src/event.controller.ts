@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    보상 요청 기능 추가
+2025.05.18  이유민      Modified    출석체크 기능 추가
 */
 import {
   Body,
@@ -17,8 +18,6 @@ import {
   Put,
   Post,
   Delete,
-  UseGuards,
-  Req,
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiQuery } from '@nestjs/swagger';
@@ -28,7 +27,6 @@ import {
   GetRequestQueryDto,
   UpdateEventDto,
 } from '@app/dto/event.dto';
-import { AuthGuard } from '@nestjs/passport';
 
 @Controller('event')
 @ApiTags('이벤트 API')
@@ -83,13 +81,15 @@ export class EventController {
   }
 
   @Post('reward/:id')
-  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({
     summary: '보상 요청 API',
   })
   @ApiBody({ type: CreateEventDto })
-  async createRequestReward(@Param('id') id: string, @Req() req) {
-    return this.eventService.createRequestReward(id, req.user.user_id);
+  async createRequestReward(
+    @Param('id') id: string,
+    @Body('user_id') user_id: string,
+  ) {
+    return this.eventService.requestEventReward(id, user_id);
   }
 
   @Get('reward/all')
@@ -136,5 +136,13 @@ export class EventController {
     @Query() query: GetRequestQueryDto,
   ) {
     return this.eventService.findUserRewardRequest(target_id, query);
+  }
+
+  @Post('attend')
+  @ApiOperation({
+    summary: '출석체크 API',
+  })
+  async createAttendance(@Body('user_id') user_id: string) {
+    return this.eventService.createAttendance(user_id);
   }
 }

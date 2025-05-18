@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.17  이유민      Created     
 2025.05.17  이유민      Modified    Gateway 라우팅 추가
+2025.05.17  이유민      Modified    출석체크 기능 추가
 */
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -64,7 +65,7 @@ export class EventService {
     return await sendExternalPostRequest(
       this.httpService,
       `${this.eventServer}/reward/${id}`,
-      { userId },
+      { user_id: userId },
     );
   }
 
@@ -100,6 +101,14 @@ export class EventService {
     return await sendExternalGetRequest(
       this.httpService,
       `${this.eventServer}/reward/${target_id}?${queryStr.substring(0, queryStr.length - 1)}`,
+    );
+  }
+
+  async createAttendance(user_id: string) {
+    return await sendExternalPostRequest(
+      this.httpService,
+      `${this.eventServer}/attend`,
+      { user_id },
     );
   }
 }

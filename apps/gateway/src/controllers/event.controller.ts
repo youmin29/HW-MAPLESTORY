@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.17  이유민      Created     
 2025.05.17  이유민      Modified    Gateway 라우팅 추가
+2025.05.17  이유민      Modified    출석체크 기능 추가
 */
 import {
   Body,
@@ -144,5 +145,14 @@ export class EventController {
     @Query() query: GetRequestQueryDto,
   ) {
     return this.eventService.findUserRewardRequest(req.user, target_id, query);
+  }
+
+  @Post('attend')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiOperation({
+    summary: '출석체크 API',
+  })
+  async createAttendance(@Req() req) {
+    return this.eventService.createAttendance(req.user.user_id);
   }
 }
