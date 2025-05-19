@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    Mongoose ref 설정 추가
 2025.05.18  이유민      Modified    코드 리팩토링
+2025.05.19  이유민      Modified    이벤트 그룹 추가
 */
 import {
   IsNumber,
@@ -26,7 +27,18 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ConditionType } from '@app/entity/event_condition.entity';
 
+export class GroupDto {
+  @ApiProperty({ description: '이벤트 그룹명' })
+  @IsString()
+  name: string;
+}
+
 export class CreateEventInfoDto {
+  @ApiProperty({ description: '이벤트 그룹 ID' })
+  @IsMongoId()
+  @IsOptional()
+  group_id?: string;
+
   @ApiProperty({ description: '이벤트 제목' })
   @IsString()
   title: string;
