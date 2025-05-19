@@ -11,6 +11,7 @@ Date        Author      Status      Description
 2025.05.16  이유민      Modified    보상 요청 기능 추가
 2025.05.18  이유민      Modified    이벤트 정보 수정 변경
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
+2025.05.19  이유민      Modified    이벤트 기간 검증 추가
 */
 import {
   BadRequestException,
@@ -33,6 +34,7 @@ import {
 import {
   existsByConditionTargetId,
   isModified,
+  isNowInRange,
   processBatch,
   validateEventCondition,
 } from './event.service.utils';
@@ -308,51 +310,52 @@ export class EventService {
     validateObjectIdOrThrow(id);
     validateObjectIdOrThrow(userId);
 
-    const isEvent = await this.eventRepository.findEventById(id);
-    if (!isEvent || !isEvent.status)
-      throw new BadRequestException('리소스를 찾을 수 없습니다.');
-
     const event_id = new Types.ObjectId(id);
     const user_id = new Types.ObjectId(userId);
+    try {
+      const isEvent = await this.eventRepository.findEventById(id);
+      if (!isEvent || !isEvent.status)
+        throw new BadRequestException('리소스를 찾을 수 없습니다.');
 
-    const isRequest = await this.requestRepository.findOneByFilter({
-      user_id,
-      event_id,
-      status: true,
-    });
+      if (!isNowInRange(isEvent.start_date, isEvent.end_date))
+        throw new BadRequestException('이벤트 기간이 아닙니다.');
 
-    if (isRequest) {
+      const isRequest = await this.requestRepository.findOneByFilter({
+        user_id,
+        event_id,
+        status: true,
+      });
+
+      if (isRequest) {
+        throw new ConflictException('이미 보상을 수령했습니다.');
+      }
+
+      const conditionList =
+        await this.conditionRepository.findConditionsByFilters({ event_id });
+
+      const validEvent = await validateEventCondition({
+        user_id,
+        conditionList,
+        attendRepository: this.attendanceRepository,
+        inventoryRepository: this.inventoryRepository,
+      });
+
+      if (!validEvent) {
+        throw new BadRequestException('이벤트 조건이 충족되지 않았습니다.');
+      }
+
+      await this.requestRepository.create({ event_id, user_id, status: true });
+      return { message: '보상이 지급되었습니다.' };
+    } catch (err) {
       await this.requestRepository.create({
         event_id,
         user_id,
         status: false,
-        reason: '이미 보상을 수령했습니다.',
+        reason: err.message || '알 수 없는 에러',
       });
-      throw new ConflictException('이미 보상을 수령했습니다.');
+
+      throw err;
     }
-
-    const conditionList =
-      await this.conditionRepository.findConditionsByFilters({ event_id });
-
-    const validEvent = await validateEventCondition({
-      user_id,
-      conditionList,
-      attendRepository: this.attendanceRepository,
-      inventoryRepository: this.inventoryRepository,
-    });
-
-    if (!validEvent) {
-      await this.requestRepository.create({
-        event_id,
-        user_id,
-        status: false,
-        reason: '이벤트 조건이 충족되지 않았습니다.',
-      });
-      throw new BadRequestException('이벤트 조건이 충족되지 않았습니다.');
-    }
-
-    await this.requestRepository.create({ event_id, user_id, status: true });
-    return { message: '보상이 지급되었습니다.' };
   }
 
   async findRewardRequestAll(query: GetRequestQueryDto) {

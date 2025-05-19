@@ -10,6 +10,7 @@ Date        Author      Status      Description
 2025.05.16  이유민      Modified    보상 요청 기능 추가
 2025.05.18  이유민      Modified    이벤트 정보 수정 변경
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
+2025.05.19  이유민      Modified    이벤트 기간 검증 추가
 */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ItemRepository } from './repository/item.repository';
@@ -179,4 +180,9 @@ export async function processBatch<T>(
   for (const item of data) {
     await handler(item);
   }
+}
+
+export function isNowInRange(startDate: Date, endDate: Date): boolean {
+  const now = new Date();
+  return now >= startDate && now <= endDate;
 }
