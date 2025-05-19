@@ -46,6 +46,16 @@ export class AuthController {
   @ApiOperation({
     summary: '로그인 API',
   })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string' },
+        password: { type: 'string' },
+      },
+      required: ['email', 'password'],
+    },
+  })
   async login(
     @Body() { email, password }: { email: string; password: string },
   ) {

@@ -21,8 +21,8 @@ async function bootstrap() {
     SwaggerModule.createDocument(
       app,
       new DocumentBuilder()
-        .setTitle('API Documentation')
-        .setDescription('API 문서입니다.')
+        .setTitle('Gateway API Documentation')
+        .setDescription('Gateway API 문서입니다.')
         .setVersion('1.0.0')
         .addBearerAuth()
         .build(),

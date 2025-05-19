@@ -23,7 +23,13 @@ import { JwtAuthGuard } from '@gateway/guards/auth.guard';
 import { RolesGuard } from '@gateway/guards/roles.guard';
 import { UserRole } from '@app/entity';
 import { Roles } from '@gateway/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { GroupService } from '@gateway/services/group.service';
 import { GroupDto } from '@app/dto';
 
@@ -83,6 +89,12 @@ export class GroupController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: '이벤트 삭제 API',
+  })
+  @ApiQuery({
+    name: 'cascade',
+    type: 'boolean',
+    required: false,
+    description: 'true로 설정하면 그룹 내 하위 이벤트도 함께 삭제됩니다.',
   })
   async deleteById(
     @Param('id') id: string,
