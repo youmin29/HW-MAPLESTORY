@@ -10,6 +10,7 @@ Date        Author      Status      Description
 2025.05.16  이유민      Modified    보상 요청 기능 추가
 2025.05.18  이유민      Modified    출석체크 기능 추가
 2025.05.19  이유민      Modified    이벤트 보상 요청 파일 분리
+2025.05.20  이유민      Modified    admin 외 기간 내 이벤트만 조회 가능 추가
 */
 import {
   Body,
@@ -19,6 +20,7 @@ import {
   Put,
   Post,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { EventService } from '../services/event.service';
@@ -45,16 +47,16 @@ export class EventController {
   @ApiOperation({
     summary: '이벤트 목록 조회 API',
   })
-  async findEventAll() {
-    return this.eventService.findEventAll();
+  async findEventAll(@Query('role') role?: string) {
+    return this.eventService.findEventAll(role);
   }
 
   @Get(':id')
   @ApiOperation({
     summary: '이벤트 상세 조회 API',
   })
-  async findEventById(@Param('id') id: string) {
-    return this.eventService.findEventById(id);
+  async findEventById(@Param('id') id: string, @Query('role') role?: string) {
+    return this.eventService.findEventById(id, role);
   }
 
   @Put(':id')

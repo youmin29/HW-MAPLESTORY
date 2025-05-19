@@ -13,6 +13,7 @@ Date        Author      Status      Description
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 2025.05.19  이유민      Modified    이벤트 기간 검증 추가
 2025.05.19  이유민      Modified    이벤트 보상 요청 파일 분리
+2025.05.20  이유민      Modified    admin 외 기간 내 이벤트만 조회 가능 추가
 */
 import {
   BadRequestException,
@@ -37,9 +38,11 @@ import {
 import {
   existsByConditionTargetId,
   isModified,
+  isNowInRange,
   processBatch,
 } from '../event.service.utils';
 import { endOfDay, startOfDay } from 'date-fns';
+import { UserRole } from '@app/entity';
 
 @Injectable()
 export class EventService {
@@ -133,17 +136,32 @@ export class EventService {
     }
   }
 
-  async findEventAll() {
-    const eventList = await this.eventRepository.findEventAll();
+  async findEventAll(role?: string) {
+    let query;
+    if (role !== UserRole.ADMIN) {
+      const today = new Date();
+      query = {
+        start_date: { $lte: today },
+        end_date: { $gte: today },
+      };
+    }
+
+    const eventList = await this.eventRepository.findEventbyFilters(query);
     return { eventList };
   }
 
-  async findEventById(id: string) {
+  async findEventById(id: string, role?: string) {
     // 유효성 검사
     validateObjectIdOrThrow(id);
 
     const eventData = await this.eventRepository.findEventById(id);
     if (!eventData) throw new NotFoundException('리소스를 찾을 수 없습니다.');
+
+    if (
+      role !== UserRole.ADMIN &&
+      !isNowInRange(eventData.start_date, eventData.end_date)
+    )
+      throw new NotFoundException('리소스를 찾을 수 없습니다.');
 
     const event_id = new Types.ObjectId(id);
 

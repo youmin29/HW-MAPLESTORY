@@ -10,6 +10,7 @@ Date        Author      Status      Description
 2025.05.17  이유민      Modified    출석체크 기능 추가
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 2025.05.20  이유민      Modified    이벤트 보상 요청 파일 분리
+2025.05.20  이유민      Modified    admin 외 기간 내 이벤트만 조회 가능 추가
 */
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -36,14 +37,17 @@ export class EventService {
     );
   }
 
-  async findEventAll() {
-    return await sendExternalGetRequest(this.httpService, this.eventServer);
-  }
-
-  async findEventById(id: string) {
+  async findEventAll(role: string) {
     return await sendExternalGetRequest(
       this.httpService,
-      `${this.eventServer}/${id}`,
+      `${this.eventServer}?role=${role}`,
+    );
+  }
+
+  async findEventById(id: string, role: string) {
+    return await sendExternalGetRequest(
+      this.httpService,
+      `${this.eventServer}/${id}?role=${role}`,
     );
   }
 

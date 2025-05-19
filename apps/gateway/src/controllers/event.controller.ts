@@ -10,6 +10,7 @@ Date        Author      Status      Description
 2025.05.17  이유민      Modified    출석체크 기능 추가
 2025.05.19  이유민      Modified    Swagger 문서 수정
 2025.05.20  이유민      Modified    이벤트 보상 요청 파일 분리
+2025.05.20  이유민      Modified    admin 외 기간 내 이벤트만 조회 가능 추가
 */
 import {
   Body,
@@ -51,19 +52,21 @@ export class EventController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '이벤트 목록 조회 API',
   })
-  async findEventAll() {
-    return this.eventService.findEventAll();
+  async findEventAll(@Req() req) {
+    return this.eventService.findEventAll(req.user.role);
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '이벤트 상세 조회 API',
   })
-  async findEventById(@Param('id') id: string) {
-    return this.eventService.findEventById(id);
+  async findEventById(@Param('id') id: string, @Req() req) {
+    return this.eventService.findEventById(id, req.user.role);
   }
 
   @Put(':id')
