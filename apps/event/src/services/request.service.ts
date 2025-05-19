@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.19  이유민      Created     
 2025.05.19  이유민      Modified    이벤트 보상 요청 파일 분리
+2025.05.20  이유민      Modified    인벤토리에 보상 지급 추가
 */
 import {
   BadRequestException,
@@ -19,10 +20,12 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { GetRequestQueryDto } from '@app/dto';
 import { validateObjectIdOrThrow } from '@app/utils/validation';
 import {
+  addRewardToInventory,
   isNowInRange,
   validateEventCondition,
 } from '@event/event.service.utils';
 import { EventRepository } from '@event/repositories/event.repository';
+import { EventRewardRepository } from '@event/repositories/event_reward.repository';
 import { RequestRepository } from '@event/repositories/event_reward_requests.repository';
 import { ConditionRepository } from '@event/repositories/event_condition.repository';
 import { AttendanceRepository } from '@event/repositories/attendance_log.repository';
@@ -33,6 +36,7 @@ export class RequestService {
   constructor(
     @InjectConnection() private readonly connection: Connection,
     private readonly eventRepository: EventRepository,
+    private readonly rewardRepository: EventRewardRepository,
     private readonly requestRepository: RequestRepository,
     private readonly conditionRepository: ConditionRepository,
     private readonly attendanceRepository: AttendanceRepository,
@@ -78,6 +82,17 @@ export class RequestService {
       if (!validEvent) {
         throw new BadRequestException('이벤트 조건이 충족되지 않았습니다.');
       }
+
+      //보상 지급
+      const rewardList = await this.rewardRepository.findByFilters({
+        event_id,
+      });
+      await addRewardToInventory(
+        user_id,
+        rewardList,
+        conditionList,
+        this.inventoryRepository,
+      );
 
       await this.requestRepository.create({ event_id, user_id, status: true });
       return { message: '보상이 지급되었습니다.' };

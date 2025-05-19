@@ -13,6 +13,7 @@ Date        Author      Status      Description
 2025.05.19  이유민      Modified    이벤트 기간 검증 추가
 2025.05.19  이유민      Modified    ConditionType 수정
 2025.05.19  이유민      Modified    폴더명 수정
+2025.05.20  이유민      Modified    인벤토리에 보상 지급 추가
 */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ItemRepository } from './repositories/item.repository';
@@ -21,6 +22,7 @@ import { InventoryRepository } from './repositories/inventory.repository';
 import { ConditionType, Condition } from '@app/entity/event_condition.entity';
 import { Types } from 'mongoose';
 import { isSameDay, startOfToday, subDays } from 'date-fns';
+import { EventReward } from '@app/entity/event_reward.entity';
 
 interface ValidateConditionTargetOptions {
   type: string;
@@ -171,4 +173,35 @@ export async function processBatch<T>(
 export function isNowInRange(startDate: Date, endDate: Date): boolean {
   const now = new Date();
   return now >= startDate && now <= endDate;
+}
+
+// 보상 지급 함수
+export async function addRewardToInventory(
+  user_id: Types.ObjectId,
+  rewardList: Partial<EventReward[]>,
+  conditionList: Partial<Condition[]>,
+  inventoryRepository: InventoryRepository,
+) {
+  // 조건 아이템 빼기
+  for (const condition of conditionList) {
+    if (condition.type === ConditionType.ITEM) {
+      const updateCondition = await inventoryRepository.updateAmountByItemId(
+        user_id,
+        condition.target_id,
+        condition.quantity * -1,
+      );
+
+      if (updateCondition.amount === 0) {
+        await inventoryRepository.deleteById(updateCondition['_id']);
+      }
+    }
+  }
+  // 보상 지급
+  for (const reward of rewardList) {
+    await inventoryRepository.updateAmountByItemId(
+      user_id,
+      reward.item_id._id,
+      reward.amount,
+    );
+  }
 }
