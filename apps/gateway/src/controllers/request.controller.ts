@@ -39,7 +39,8 @@ export class RequestController {
 
   @Post(':id')
   @Throttle({ default: { limit: 50, ttl: 60 * 1000 } })
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.User)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '보상 요청 API',
@@ -86,22 +87,83 @@ export class RequestController {
     return this.requestService.findRewardRequestAll(query);
   }
 
-  @Get(':user_id')
+  @Get('my')
   @Throttle({ default: { limit: 50, ttl: 60 * 1000 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: '본인 또는 특정 사용자 보상 요청 조회 API',
+    summary: '본인의 보상 요청 조회 API',
+  })
+  @ApiQuery({
+    name: 'status',
+    type: String,
+    required: false,
+    description: '상태별 필터링',
+    enum: ['true', 'false'],
+  })
+  @ApiQuery({
+    name: 'eventId',
+    type: String,
+    required: false,
+    description: '이벤트별 필터링',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    type: String,
+    required: false,
+    description: '정렬 기준',
+    enum: ['createdAt', 'eventId'],
+  })
+  @ApiQuery({
+    name: 'order',
+    type: String,
+    required: false,
+    description: '정렬 순서',
+    enum: ['asc', 'desc'],
+  })
+  async findMyRewardRequest(@Query() query: GetRequestQueryDto, @Req() req) {
+    return this.requestService.findUserRewardRequest(req.user.user_id, query);
+  }
+
+  @Get(':user_id')
+  @Throttle({ default: { limit: 50, ttl: 60 * 1000 } })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.OPERATOR, UserRole.AUDITOR)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '특정 유저 보상 요청 조회 API',
+  })
+  @ApiQuery({
+    name: 'status',
+    type: String,
+    required: false,
+    description: '상태별 필터링',
+    enum: ['true', 'false'],
+  })
+  @ApiQuery({
+    name: 'eventId',
+    type: String,
+    required: false,
+    description: '이벤트별 필터링',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    type: String,
+    required: false,
+    description: '정렬 기준',
+    enum: ['createdAt', 'eventId'],
+  })
+  @ApiQuery({
+    name: 'order',
+    type: String,
+    required: false,
+    description: '정렬 순서',
+    enum: ['asc', 'desc'],
   })
   async findUserRewardRequest(
     @Param('user_id') target_id: string,
     @Query() query: GetRequestQueryDto,
-    @Req() req,
   ) {
-    return this.requestService.findUserRewardRequest(
-      req.user,
-      target_id,
-      query,
-    );
+    return this.requestService.findUserRewardRequest(target_id, query);
   }
 }

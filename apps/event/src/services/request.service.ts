@@ -14,6 +14,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Connection, Types } from 'mongoose';
@@ -55,7 +56,7 @@ export class RequestService {
     try {
       const isEvent = await this.eventRepository.findEventById(id);
       if (!isEvent || !isEvent.status)
-        throw new BadRequestException('리소스를 찾을 수 없습니다.');
+        throw new NotFoundException('리소스를 찾을 수 없습니다.');
 
       if (!isNowInRange(isEvent.start_date, isEvent.end_date))
         throw new BadRequestException('이벤트 기간이 아닙니다.');

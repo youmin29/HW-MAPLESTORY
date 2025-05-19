@@ -8,10 +8,9 @@ Date        Author      Status      Description
 2025.05.20  이유민      Created     
 2025.05.20  이유민      Modified    이벤트 그룹 추가
 */
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { GetRequestQueryDto } from '@app/dto';
-import { UserRole } from '@app/entity';
 import {
   sendExternalGetRequest,
   sendExternalPostRequest,
@@ -45,16 +44,7 @@ export class RequestService {
     );
   }
 
-  async findUserRewardRequest(
-    user: { user_id: string; role: string; name: string },
-    target_id: string,
-    query: GetRequestQueryDto,
-  ) {
-    if (user.role === UserRole.User) {
-      if (user.user_id !== target_id)
-        throw new ForbiddenException('해당 작업을 수행할 권한이 없습니다.');
-    }
-
+  async findUserRewardRequest(target_id: string, query: GetRequestQueryDto) {
     let queryStr = '';
 
     for (const key of Object.keys(query)) {

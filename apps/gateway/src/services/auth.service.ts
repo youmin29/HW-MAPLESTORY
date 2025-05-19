@@ -35,7 +35,7 @@ export class AuthService {
     );
   }
 
-  async validateServiceUser(email: string, password: string): Promise<any> {
+  async validateServiceUser(email: string, password: string) {
     return await sendExternalPostRequest(
       this.httpService,
       `${this.authServer}/signin`,
@@ -46,7 +46,7 @@ export class AuthService {
     );
   }
 
-  async changeUserRole(updateDto: UpdateUserRoleDto): Promise<object> {
+  async changeUserRole(updateDto: UpdateUserRoleDto) {
     return await sendExternalPostRequest(
       this.httpService,
       `${this.authServer}/role`,

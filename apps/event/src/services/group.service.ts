@@ -79,13 +79,20 @@ export class GroupService {
       await session.withTransaction(async () => {
         await this.groupRepository.deleteById(groupId, session);
 
+        const eventList = await this.eventRepository.findEventbyFilters({
+          group_id: groupId,
+        });
         if (cascade == 'true') {
-          const eventList = await this.eventRepository.findEventbyFilters({
-            group_id: groupId,
-          });
-
           for (const event of eventList) {
             await this.eventService.deleteEventById(event['_id'].toString());
+          }
+        } else {
+          for (const event of eventList) {
+            await this.eventRepository.updateEventById(
+              event['_id'].toString(),
+              { group_id: null },
+              session,
+            );
           }
         }
       });
