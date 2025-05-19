@@ -11,6 +11,7 @@ Date        Author      Status      Description
 2025.05.18  이유민      Modified    이벤트 정보 수정 변경
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 2025.05.19  이유민      Modified    이벤트 기간 검증 추가
+2025.05.19  이유민      Modified    ConditionType 수정
 */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ItemRepository } from './repository/item.repository';
@@ -41,19 +42,11 @@ export async function existsByConditionTargetId({
   let validItem = {};
 
   switch (type) {
-    case ConditionType.QUEST:
-      break;
-    case ConditionType.KILL:
-      break;
     case ConditionType.ATTEND:
       break;
     case ConditionType.ITEM:
       validItem = await itemRepository.findOneById(target_id);
       if (!validItem) throw new NotFoundException('리소스를 찾을 수 없습니다.');
-      break;
-    case ConditionType.BOSS:
-      break;
-    case ConditionType.INVITE:
       break;
     default:
       throw new BadRequestException(`${type}는 알 수 없는 타입입니다.`);
@@ -69,10 +62,6 @@ export async function validateEventCondition(
 
   for (const condition of conditionList) {
     switch (condition.type) {
-      case ConditionType.QUEST:
-        break;
-      case ConditionType.KILL:
-        break;
       case ConditionType.ATTEND:
         const attend = await checkAttendEvent(
           condition.quantity,
@@ -88,10 +77,6 @@ export async function validateEventCondition(
             item_id: condition.target_id,
           });
         if (!userInven || userInven.amount < condition.quantity) return false;
-        break;
-      case ConditionType.BOSS:
-        break;
-      case ConditionType.INVITE:
         break;
       default:
         throw new BadRequestException(

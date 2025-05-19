@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.14  이유민      Created     
 2025.05.14  이유민      Modified    회원 기능 추가
 2025.05.19  이유민      Modified    Mongoose ref 설정 추가
+2025.05.19  이유민      Modified    속성 수정
 */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
@@ -25,9 +26,6 @@ export class Auth {
 
   @Prop({ required: true })
   password: string;
-
-  @Prop()
-  refresh_token: string;
 }
 
 export const AuthSchema = SchemaFactory.createForClass(Auth);
