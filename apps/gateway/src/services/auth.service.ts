@@ -7,10 +7,12 @@ History
 Date        Author      Status      Description
 2025.05.17  이유민      Created     
 2025.05.17  이유민      Modified    Gateway 라우팅 추가
+2025.05.19  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { sendExternalPostRequest } from '@app/utils/http';
+import { UpdateUserRoleDto } from '@app/dto';
 
 @Injectable()
 export class AuthService {
@@ -44,14 +46,11 @@ export class AuthService {
     );
   }
 
-  async changeUserRole(user_id: string, role: string): Promise<object> {
+  async changeUserRole(updateDto: UpdateUserRoleDto): Promise<object> {
     return await sendExternalPostRequest(
       this.httpService,
       `${this.authServer}/role`,
-      {
-        user_id,
-        role,
-      },
+      updateDto,
     );
   }
 }

@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.14  이유민      Created     
 2025.05.14  이유민      Modified    회원 기능 추가
 2025.05.18  이유민      Modified    트랙잭션 추가
+2025.05.19  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -18,20 +19,11 @@ import { Auth } from '@app/entity/auth.entity';
 export class AuthRepository {
   constructor(@InjectModel(Auth.name) private authModel: Model<Auth>) {}
 
-  async create(
-    authData: Partial<Auth>,
-    user_id: string,
-    session: ClientSession,
-  ): Promise<Auth> {
-    const newAuth = new this.authModel({
-      email: authData.email,
-      password: authData.password,
-      user_id,
-    });
-    return await newAuth.save({ session });
+  async create(authData: Partial<Auth>, session: ClientSession): Promise<Auth> {
+    return await new this.authModel(authData).save({ session });
   }
 
   async findOneByEmail(email: string): Promise<Auth | null> {
-    return this.authModel.findOne({ email }).exec();
+    return await this.authModel.findOne({ email }).exec();
   }
 }

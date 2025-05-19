@@ -9,14 +9,21 @@ Date        Author      Status      Description
 2025.05.14  이유민      Modified    회원 기능 추가
 2025.05.18  이유민      Modified    트랙잭션 추가
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
+2025.05.19  이유민      Modified    코드 리팩토링
 */
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthRepository } from './repository/auth.repository';
 import { UserRepository } from './repository/user.repository';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { Connection, Types } from 'mongoose';
+import { UpdateUserRoleDto } from '@app/dto';
 
 @Injectable()
 export class AuthService {
@@ -42,6 +49,9 @@ export class AuthService {
   }) {
     const session = await this.connection.startSession();
     try {
+      const isEmail = await this.authRepository.findOneByEmail(email);
+      if (isEmail) throw new ConflictException('이미 사용 중인 이메일입니다.');
+
       await session.withTransaction(async () => {
         const newUser = await this.userRepository.create(
           {
@@ -52,14 +62,12 @@ export class AuthService {
           session,
         );
 
-        const user_id = newUser._id.toString();
+        const user_id = new Types.ObjectId(newUser._id);
 
-        await this.authRepository.create({ email, password }, user_id, session);
+        await this.authRepository.create({ email, password, user_id }, session);
       });
-      await session.commitTransaction();
-      return;
+      return { message: '회원가입이 성공적으로 완료되었습니다.' };
     } catch (error) {
-      await session.abortTransaction();
       throw error;
     } finally {
       session.endSession();
@@ -87,7 +95,7 @@ export class AuthService {
       );
 
     const payload = {
-      user_id: auth.user_id,
+      user_id: auth.user_id.toString(),
       name: user.name,
       role: user.role,
     };
@@ -95,19 +103,17 @@ export class AuthService {
     return { token: this.jwtService.sign(payload) };
   }
 
-  async changeUserRole(user_id: string, role: string) {
-    const session = await this.connection.startSession();
-    try {
-      await session.withTransaction(async () => {
-        return this.userRepository.updateUserById(user_id, { role }, session);
-      });
-      await session.commitTransaction();
-      return { message: '수정되었습니다.' };
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
+  async changeUserRole(updateDto: UpdateUserRoleDto) {
+    const { user_id, role } = updateDto;
+    const ObjectUserId = new Types.ObjectId(user_id);
+
+    const isUser = await this.userRepository.findOneById(ObjectUserId);
+    if (!isUser) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+
+    await this.userRepository.updateUserById(ObjectUserId, {
+      role,
+    });
+
+    return { message: '수정되었습니다.' };
   }
 }

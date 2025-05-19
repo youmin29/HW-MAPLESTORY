@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.17  이유민      Created     
 2025.05.17  이유민      Modified    http 요청 유틸 함수 추가
+2025.05.19  이유민      Modified    코드 리팩토링
 */
 import { HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -21,7 +22,7 @@ export async function sendExternalGetRequest<T>(
 ): Promise<T> {
   try {
     const response = await firstValueFrom(httpService.get<T>(url));
-    return response.data;
+    return response?.data ?? null;
   } catch (err) {
     if (err instanceof AxiosError) {
       const status = err.response.data.statusCode;
@@ -43,7 +44,7 @@ export async function sendExternalPostRequest<T>(
 ): Promise<T> {
   try {
     const response = await firstValueFrom(httpService.post<T>(url, body));
-    return response.data;
+    return response?.data ?? null;
   } catch (err) {
     if (err instanceof AxiosError) {
       const status = err.response.data.statusCode;
@@ -65,7 +66,7 @@ export async function sendExternalPutRequest<T>(
 ): Promise<T> {
   try {
     const response = await firstValueFrom(httpService.put<T>(url, body));
-    return response.data;
+    return response?.data ?? null;
   } catch (err) {
     if (err instanceof AxiosError) {
       const status = err.response.data.statusCode;
@@ -86,7 +87,7 @@ export async function sendExternalDeleteRequest<T>(
 ): Promise<T> {
   try {
     const response = await firstValueFrom(httpService.delete<T>(url));
-    return response.data;
+    return response?.data ?? null;
   } catch (err) {
     if (err instanceof AxiosError) {
       const status = err.response.data.statusCode;
