@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.17  이유민      Created     
 2025.05.17  이유민      Modified    Gateway 라우팅 추가
 2025.05.17  이유민      Modified    출석체크 기능 추가
+2025.05.19  이유민      Modified    Swagger 문서 수정
 */
 import {
   Body,
@@ -25,7 +26,13 @@ import { JwtAuthGuard } from '@gateway/guards/auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { Roles } from '@gateway/decorators/roles.decorator';
 import { UserRole } from '@app/entity';
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateEventDto, GetRequestQueryDto, UpdateEventDto } from '@app/dto';
 import { EventService } from '@gateway/services/event.service';
 
@@ -40,6 +47,7 @@ export class EventController {
   @ApiOperation({
     summary: '이벤트 생성 API',
   })
+  @ApiBearerAuth()
   @ApiBody({ type: CreateEventDto })
   async create(
     @Body()
@@ -70,6 +78,7 @@ export class EventController {
   @ApiOperation({
     summary: '이벤트 수정 API',
   })
+  @ApiBearerAuth()
   async updateEventById(
     @Param('id') id: string,
     @Body() updateData: UpdateEventDto,
@@ -83,6 +92,7 @@ export class EventController {
   @ApiOperation({
     summary: '이벤트 삭제 API',
   })
+  @ApiBearerAuth()
   async deleteEventById(@Param('id') id: string) {
     return this.eventService.deleteEventById(id);
   }
@@ -92,6 +102,7 @@ export class EventController {
   @ApiOperation({
     summary: '보상 요청 API',
   })
+  @ApiBearerAuth()
   @ApiBody({ type: CreateEventDto })
   async createRequestReward(@Param('id') id: string, @Req() req) {
     return this.eventService.createRequestReward(id, req.user.user_id);
@@ -103,6 +114,7 @@ export class EventController {
   @ApiOperation({
     summary: '전체 유저의 보상 요청 기록 조회 API',
   })
+  @ApiBearerAuth()
   @ApiQuery({
     name: 'status',
     type: String,
@@ -139,6 +151,7 @@ export class EventController {
   @ApiOperation({
     summary: '본인 또는 특정 사용자 보상 요청 조회 API',
   })
+  @ApiBearerAuth()
   async findUserRewardRequest(
     @Req() req,
     @Param('user_id') target_id: string,
@@ -152,6 +165,7 @@ export class EventController {
   @ApiOperation({
     summary: '출석체크 API',
   })
+  @ApiBearerAuth()
   async createAttendance(@Req() req) {
     return this.eventService.createAttendance(req.user.user_id);
   }
