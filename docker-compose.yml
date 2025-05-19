@@ -12,8 +12,6 @@ services:
     ports:
       - '3000:3000'
     working_dir: /app/apps/gateway
-    volumes:
-      - .:/app
     command: npm run start:gateway
 
   auth:
@@ -26,8 +24,6 @@ services:
     ports:
       - '3001:3001'
     working_dir: /app/apps/auth
-    volumes:
-      - .:/app
     command: npm run start:auth
 
   event:
@@ -40,8 +36,6 @@ services:
     ports:
       - '3002:3002'
     working_dir: /app/apps/event
-    volumes:
-      - .:/app
     command: npm run start:event
 
 networks:
