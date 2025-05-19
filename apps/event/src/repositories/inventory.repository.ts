@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.18  이유민      Created     
 2025.05.18  이유민      Modified    인벤토리 추가
+2025.05.19  이유민      Modified    폴더명 수정
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';

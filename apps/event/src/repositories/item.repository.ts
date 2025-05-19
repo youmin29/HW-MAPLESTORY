@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    코드 리팩토링
+2025.05.19  이유민      Modified    폴더명 수정
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';

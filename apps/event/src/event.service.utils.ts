@@ -12,11 +12,12 @@ Date        Author      Status      Description
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 2025.05.19  이유민      Modified    이벤트 기간 검증 추가
 2025.05.19  이유민      Modified    ConditionType 수정
+2025.05.19  이유민      Modified    폴더명 수정
 */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { ItemRepository } from './repository/item.repository';
-import { AttendanceRepository } from './repository/attendance_log.repository';
-import { InventoryRepository } from './repository/inventory.repository';
+import { ItemRepository } from './repositories/item.repository';
+import { AttendanceRepository } from './repositories/attendance_log.repository';
+import { InventoryRepository } from './repositories/inventory.repository';
 import { ConditionType, Condition } from '@app/entity/event_condition.entity';
 import { Types } from 'mongoose';
 import { isSameDay, startOfToday, subDays } from 'date-fns';

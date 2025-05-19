@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    트랜잭션 추가
 2025.05.16  이유민      Modified    코드 리팩토링
+2025.05.19  이유민      Modified    폴더명 수정
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -30,8 +31,8 @@ export class EventRepository {
     return await new this.eventModel(eventData).save({ session });
   }
 
-  async findEventAll(): Promise<EventInfo[]> {
-    return await this.eventModel.find().lean();
+  async findEventAll(filters?: Partial<EventInfo>): Promise<EventInfo[]> {
+    return await this.eventModel.find(filters).lean().exec();
   }
 
   async findEventById(id: string): Promise<EventLean | null> {
