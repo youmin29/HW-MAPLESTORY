@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.20  이유민      Created     
 2025.05.20  이유민      Modified    이벤트 보상 요청 파일 분리
+2025.05.20  이유민      Modified    Throttler 수정
 */
 import {
   Controller,
@@ -29,6 +30,7 @@ import {
 } from '@nestjs/swagger';
 import { RequestService } from '@gateway/services/request.service';
 import { GetRequestQueryDto } from '@app/dto/event.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('event/request')
 @ApiTags('이벤트 보상 요청 API')
@@ -36,6 +38,7 @@ export class RequestController {
   constructor(private readonly requestService: RequestService) {}
 
   @Post(':id')
+  @Throttle({ default: { limit: 50, ttl: 60 * 1000 } })
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -84,7 +87,8 @@ export class RequestController {
   }
 
   @Get(':user_id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Throttle({ default: { limit: 50, ttl: 60 * 1000 } })
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '본인 또는 특정 사용자 보상 요청 조회 API',

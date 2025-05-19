@@ -11,6 +11,7 @@ Date        Author      Status      Description
 2025.05.19  이유민      Modified    Swagger 문서 수정
 2025.05.20  이유민      Modified    이벤트 보상 요청 파일 분리
 2025.05.20  이유민      Modified    admin 외 기간 내 이벤트만 조회 가능 추가
+2025.05.20  이유민      Modified    Throttler 수정
 */
 import {
   Body,
@@ -30,6 +31,7 @@ import { UserRole } from '@app/entity';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateEventDto, UpdateEventDto } from '@app/dto';
 import { EventService } from '@gateway/services/event.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('event')
 @ApiTags('이벤트 API')
@@ -52,6 +54,7 @@ export class EventController {
   }
 
   @Get()
+  @Throttle({ default: { limit: 50, ttl: 60 * 1000 } })
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '이벤트 목록 조회 API',
@@ -61,6 +64,7 @@ export class EventController {
   }
 
   @Get(':id')
+  @Throttle({ default: { limit: 50, ttl: 60 * 1000 } })
   @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '이벤트 상세 조회 API',
@@ -95,7 +99,8 @@ export class EventController {
   }
 
   @Post('attend')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Throttle({ default: { limit: 5, ttl: 5 * 60 * 1000 } })
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: '출석체크 API',
   })

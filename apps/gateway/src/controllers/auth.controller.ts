@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.17  이유민      Created     
 2025.05.17  이유민      Modified    Gateway 라우팅 추가
 2025.05.19  이유민      Modified    Swagger 문서 수정
+2025.05.20  이유민      Modified    Throttler 수정
 */
 import { Body, Controller, Post } from '@nestjs/common';
 import { RolesGuard } from '@gateway/guards/roles.guard';
@@ -18,6 +19,7 @@ import { UserRole } from '@app/entity';
 import { ApiBody, ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateAuthDto, UpdateUserRoleDto } from '@app/dto';
 import { AuthService } from '@gateway/services/auth.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 @ApiTags('회원 API')
@@ -25,6 +27,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
+  @Throttle({ default: { limit: 5, ttl: 30 * 60 * 1000 } })
   @ApiOperation({
     summary: '회원가입 API',
   })
@@ -39,6 +42,7 @@ export class AuthController {
   }
 
   @Post('signin')
+  @Throttle({ default: { limit: 5, ttl: 60 * 1000 } })
   @ApiOperation({
     summary: '로그인 API',
   })
