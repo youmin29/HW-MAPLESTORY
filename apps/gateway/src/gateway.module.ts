@@ -6,6 +6,10 @@ import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { EventController } from './controllers/event.controller';
 import { EventService } from './services/event.service';
+import { GroupController } from './controllers/group.controller';
+import { GroupService } from './services/group.service';
+import { RequestController } from './controllers/request.controller';
+import { RequestService } from './services/request.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -26,10 +30,17 @@ import { APP_GUARD } from '@nestjs/core';
     }),
     HttpModule,
   ],
-  controllers: [AuthController, EventController],
+  controllers: [
+    AuthController,
+    GroupController,
+    EventController,
+    RequestController,
+  ],
   providers: [
     AuthService,
+    GroupService,
     EventService,
+    RequestService,
     JwtStrategy,
     {
       provide: APP_GUARD,

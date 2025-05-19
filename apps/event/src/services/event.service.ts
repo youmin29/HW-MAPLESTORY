@@ -1,6 +1,6 @@
 /**
 File Name : event.service
-Description : Event Server - Service
+Description : Event Server - Service(event)
 Author : 이유민
 
 History
@@ -12,6 +12,7 @@ Date        Author      Status      Description
 2025.05.18  이유민      Modified    이벤트 정보 수정 변경
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 2025.05.19  이유민      Modified    이벤트 기간 검증 추가
+2025.05.19  이유민      Modified    이벤트 보상 요청 파일 분리
 */
 import {
   BadRequestException,
@@ -22,11 +23,13 @@ import {
 } from '@nestjs/common';
 import { Connection, Types } from 'mongoose';
 import { InjectConnection } from '@nestjs/mongoose';
-import { EventRepository } from './repository/event.repository';
-import { EventRewardRepository } from './repository/event_reward.repository';
-import { ItemRepository } from './repository/item.repository';
-import { ConditionRepository } from './repository/event_condition.repository';
-import { CreateEventDto, GetRequestQueryDto, UpdateEventDto } from '@app/dto';
+import { EventRepository } from '@event/repositories/event.repository';
+import { EventRewardRepository } from '@event/repositories/event_reward.repository';
+import { ConditionRepository } from '@event/repositories/event_condition.repository';
+import { ItemRepository } from '@event/repositories/item.repository';
+import { AttendanceRepository } from '@event/repositories/attendance_log.repository';
+import { GroupRepository } from '@event/repositories/event_group.repository';
+import { CreateEventDto, UpdateEventDto } from '@app/dto';
 import {
   validateObjectIdOrThrow,
   validateObjectPropertyIdsOrThrow,
@@ -34,26 +37,20 @@ import {
 import {
   existsByConditionTargetId,
   isModified,
-  isNowInRange,
   processBatch,
-  validateEventCondition,
-} from './event.service.utils';
-import { AttendanceRepository } from './repository/attendance_log.repository';
-import { RequestRepository } from './repository/event_reward_requests.repository';
+} from '../event.service.utils';
 import { endOfDay, startOfDay } from 'date-fns';
-import { InventoryRepository } from './repository/inventory.repository';
 
 @Injectable()
 export class EventService {
   constructor(
     @InjectConnection() private readonly connection: Connection,
     private readonly eventRepository: EventRepository,
+    private readonly groupRepository: GroupRepository,
+    private readonly conditionRepository: ConditionRepository,
     private readonly eventRewardRepository: EventRewardRepository,
     private readonly itemRepository: ItemRepository,
-    private readonly conditionRepository: ConditionRepository,
     private readonly attendanceRepository: AttendanceRepository,
-    private readonly requestRepository: RequestRepository,
-    private readonly inventoryRepository: InventoryRepository,
   ) {}
 
   async create(eventAndRewardData: CreateEventDto) {
@@ -62,6 +59,15 @@ export class EventService {
     // 유효성 검사
     validateObjectPropertyIdsOrThrow(condition, 'target_id');
     validateObjectPropertyIdsOrThrow(reward, 'item_id');
+
+    let group_id;
+    if (event.group_id) {
+      group_id = new Types.ObjectId(event.group_id);
+      validateObjectIdOrThrow(group_id);
+
+      const isGroup = await this.groupRepository.findOneById(group_id);
+      if (!isGroup) throw new NotFoundException('리소스를 찾을 수 없습니다.');
+    }
 
     // target_id 확인
     await Promise.all(
@@ -81,6 +87,7 @@ export class EventService {
         const newEvent = await this.eventRepository.create(
           {
             ...event,
+            group_id,
             start_date: new Date(event.start_date),
             end_date: new Date(event.end_date),
           },
@@ -140,6 +147,10 @@ export class EventService {
 
     const event_id = new Types.ObjectId(id);
 
+    const groupData = await this.groupRepository.findOneById(
+      eventData.group_id,
+    );
+
     const rewardList = await this.eventRewardRepository.findByFilters({
       event_id,
     });
@@ -169,7 +180,7 @@ export class EventService {
       }
     }
 
-    return { eventData, rewardList, conditionList };
+    return { eventData, groupData, rewardList, conditionList };
   }
 
   async updateEventById(id: string, updateData: UpdateEventDto) {
@@ -182,6 +193,14 @@ export class EventService {
     validateObjectIdOrThrow(id);
     validateObjectPropertyIdsOrThrow(condition, 'target_id');
     validateObjectPropertyIdsOrThrow(reward, 'item_id');
+
+    let group_id;
+    if (event.group_id) {
+      validateObjectIdOrThrow(event.group_id);
+      group_id = new Types.ObjectId(event.group_id);
+    } else if (event.group_id == undefined || event.group_id == null) {
+      group_id = null;
+    }
 
     const session = await this.connection.startSession();
     try {
@@ -213,6 +232,7 @@ export class EventService {
           id,
           {
             ...event,
+            group_id,
             start_date: new Date(event.start_date),
             end_date: new Date(event.end_date),
           },
@@ -302,94 +322,6 @@ export class EventService {
     } finally {
       session.endSession();
     }
-  }
-
-  async requestEventReward(id: string, userId: string) {
-    if (!userId) throw new UnauthorizedException('로그인 후 이용 가능합니다.');
-
-    validateObjectIdOrThrow(id);
-    validateObjectIdOrThrow(userId);
-
-    const event_id = new Types.ObjectId(id);
-    const user_id = new Types.ObjectId(userId);
-    try {
-      const isEvent = await this.eventRepository.findEventById(id);
-      if (!isEvent || !isEvent.status)
-        throw new BadRequestException('리소스를 찾을 수 없습니다.');
-
-      if (!isNowInRange(isEvent.start_date, isEvent.end_date))
-        throw new BadRequestException('이벤트 기간이 아닙니다.');
-
-      const isRequest = await this.requestRepository.findOneByFilter({
-        user_id,
-        event_id,
-        status: true,
-      });
-
-      if (isRequest) {
-        throw new ConflictException('이미 보상을 수령했습니다.');
-      }
-
-      const conditionList =
-        await this.conditionRepository.findConditionsByFilters({ event_id });
-
-      const validEvent = await validateEventCondition({
-        user_id,
-        conditionList,
-        attendRepository: this.attendanceRepository,
-        inventoryRepository: this.inventoryRepository,
-      });
-
-      if (!validEvent) {
-        throw new BadRequestException('이벤트 조건이 충족되지 않았습니다.');
-      }
-
-      await this.requestRepository.create({ event_id, user_id, status: true });
-      return { message: '보상이 지급되었습니다.' };
-    } catch (err) {
-      await this.requestRepository.create({
-        event_id,
-        user_id,
-        status: false,
-        reason: err.message || '알 수 없는 에러',
-      });
-
-      throw err;
-    }
-  }
-
-  async findRewardRequestAll(query: GetRequestQueryDto) {
-    const filter: any = {};
-
-    if (query.status) filter.status = query.status;
-    if (query.eventId) {
-      validateObjectIdOrThrow(query.eventId);
-      filter.event_id = new Types.ObjectId(query.eventId);
-    }
-    if (query.userId) {
-      validateObjectIdOrThrow(query.userId);
-      filter.user_id = new Types.ObjectId(query.userId);
-    }
-
-    const sortBy = query.sortBy === 'createdAt' ? query.sortBy : 'event_id';
-    const sortOrder = query.order === 'asc' ? 1 : -1;
-
-    const requestList = await this.requestRepository.findByFilter(filter, {
-      [sortBy]: sortOrder,
-    });
-
-    return requestList;
-  }
-
-  async findUserRewardRequest(target_id: string, query: GetRequestQueryDto) {
-    validateObjectIdOrThrow(target_id);
-
-    const requestList = await this.findRewardRequestAll({
-      ...query,
-      userId: target_id,
-    });
-
-    return { requestList };
   }
 
   async createAttendance(user_id: string) {
