@@ -8,10 +8,11 @@ Date        Author      Status      Description
 2025.05.14  이유민      Created     
 2025.05.14  이유민      Modified    회원 기능 추가
 2025.05.18  이유민      Modified    트랙잭션 추가
+2025.05.19  이유민      Modified    Mongoose ref 설정 추가
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Document, ClientSession } from 'mongoose';
+import { Model, ClientSession, Types } from 'mongoose';
 import { User } from '@app/entity/user.entity';
 
 @Injectable()
@@ -21,19 +22,18 @@ export class UserRepository {
   async create(
     userData: Partial<User>,
     session: ClientSession,
-  ): Promise<User & Document> {
+  ): Promise<User & { _id: Types.ObjectId }> {
     return await new this.userModel(userData).save({ session });
   }
 
-  async findOneById(id: string): Promise<User | null> {
-    return this.userModel.findOne({ _id: id }).lean().exec();
+  async findOneById(id: Types.ObjectId): Promise<User | null> {
+    return await this.userModel.findOne({ _id: id }).lean().exec();
   }
 
   async updateUserById(
-    id: string,
+    id: Types.ObjectId,
     updateData: Partial<User>,
-    session: ClientSession,
   ): Promise<User | null> {
-    return await this.userModel.findByIdAndUpdate(id, updateData, { session });
+    return await this.userModel.findByIdAndUpdate({ _id: id }, updateData);
   }
 }
