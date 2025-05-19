@@ -1,0 +1,108 @@
+/**
+File Name : group.service
+Description : Event Server - Service(group)
+Author : 이유민
+
+History
+Date        Author      Status      Description
+2025.05.19  이유민      Created     
+2025.05.19  이유민      Modified    이벤트 그룹 추가
+2025.05.20  이유민      Modified    코드 리팩토링
+*/
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Connection, Types } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
+import { EventService } from './event.service';
+import { GroupRepository } from '@event/repositories/event_group.repository';
+import { EventRepository } from '@event/repositories/event.repository';
+import { GroupDto } from '@app/dto';
+import { validateObjectIdOrThrow } from '@app/utils/validation';
+
+@Injectable()
+export class GroupService {
+  constructor(
+    @InjectConnection() private readonly connection: Connection,
+    private readonly groupRepository: GroupRepository,
+    private readonly eventRepository: EventRepository,
+    private readonly eventService: EventService,
+  ) {}
+
+  async create(newData: GroupDto): Promise<object> {
+    await this.groupRepository.create(newData);
+    return { message: '데이터가 정상적으로 등록되었습니다.' };
+  }
+
+  async findAll() {
+    const groupList = await this.groupRepository.findByFilters();
+    return { groupList };
+  }
+
+  async findOneById(id: string) {
+    validateObjectIdOrThrow(id);
+
+    const groupId = new Types.ObjectId(id);
+    const groupData = await this.groupRepository.findOneById(groupId);
+
+    if (!groupData) throw new NotFoundException('리소스를 찾을 수 없습니다.');
+
+    const eventList = await this.eventRepository.findEventbyFilters({
+      group_id: groupId,
+    });
+
+    return { groupData, eventList };
+  }
+
+  async updateById(id: string, updateData: GroupDto): Promise<object> {
+    validateObjectIdOrThrow(id);
+
+    const groupId = new Types.ObjectId(id);
+    const updated = await this.groupRepository.updateById(groupId, updateData);
+
+    if (!updated) throw new NotFoundException('리소스를 찾을 수 없습니다.');
+
+    return { message: '데이터가 정상적으로 수정되었습니다.' };
+  }
+
+  async deleteById(id: string, cascade: string): Promise<object> {
+    validateObjectIdOrThrow(id);
+    const groupId = new Types.ObjectId(id);
+
+    const isData = await this.groupRepository.findOneById(groupId);
+    if (!isData) throw new BadRequestException('리소스를 찾을 수 없습니다.');
+
+    const session = await this.connection.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await this.groupRepository.deleteById(groupId, session);
+
+        const eventList = await this.eventRepository.findEventbyFilters({
+          group_id: groupId,
+        });
+        if (cascade == 'true') {
+          for (const event of eventList) {
+            await this.eventService.deleteEventById(event['_id'].toString());
+          }
+        } else {
+          for (const event of eventList) {
+            await this.eventRepository.updateEventById(
+              event['_id'].toString(),
+              { group_id: null },
+              session,
+            );
+          }
+        }
+      });
+      await session.commitTransaction();
+      return { message: '데이터가 정상적으로 삭제되었습니다.' };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+}

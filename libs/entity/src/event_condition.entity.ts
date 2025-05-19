@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    Mongoose ref 설정 추가
+2025.05.19  이유민      Modified    ConditionType 수정
 */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { EventInfo } from './event_info.entity';
@@ -17,10 +18,6 @@ export type ConditionDocument = Condition & Document;
 
 export enum ConditionType {
   ATTEND = 'attend', // 출석
-  INVITE = 'invite', // 친구 초대
-  QUEST = 'quest', // 특정 퀘스트 수행
-  KILL = 'kill', // 몬스터 사냥
-  BOSS = 'boss', // 보스
   ITEM = 'item', // 아이템
 }
 

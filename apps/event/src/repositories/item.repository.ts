@@ -8,6 +8,8 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    코드 리팩토링
+2025.05.19  이유민      Modified    폴더명 수정
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -23,7 +25,7 @@ export class ItemRepository {
   }
 
   async findItemAll(): Promise<Item[]> {
-    return this.itemModel.find().lean();
+    return this.itemModel.find().lean().exec();
   }
 
   async findOneById(id: Types.ObjectId): Promise<Item | null> {

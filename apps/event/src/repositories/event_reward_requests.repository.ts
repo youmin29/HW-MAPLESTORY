@@ -1,12 +1,13 @@
 /**
 File Name : event_reward_requests.repository
-Description : 유저 보상 요청 내역 Repository 정의
+Description : Event Server - Repository(Request)
 Author : 이유민
 
 History
 Date        Author      Status      Description
 2025.05.16  이유민      Created     
 2025.05.16  이유민      Modified    보상 요청 기능 추가
+2025.05.19  이유민      Modified    폴더명 수정
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';

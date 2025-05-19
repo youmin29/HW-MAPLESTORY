@@ -1,34 +1,43 @@
-version: '3'
 services:
   gateway:
+    container_name: gateway
     build:
       context: .
       dockerfile: apps/gateway/Dockerfile
+    networks:
+      - app-network
+    depends_on:
+      - auth
+      - event
     ports:
       - '3000:3000'
     working_dir: /app/apps/gateway
-    volumes:
-      - .:/app
     command: npm run start:gateway
 
   auth:
+    container_name: auth
     build:
       context: .
       dockerfile: apps/auth/Dockerfile
+    networks:
+      - app-network
     ports:
       - '3001:3001'
     working_dir: /app/apps/auth
-    volumes:
-      - .:/app
     command: npm run start:auth
 
   event:
+    container_name: event
     build:
       context: .
       dockerfile: apps/event/Dockerfile
+    networks:
+      - app-network
     ports:
       - '3002:3002'
     working_dir: /app/apps/event
-    volumes:
-      - .:/app
     command: npm run start:event
+
+networks:
+  app-network:
+    driver: bridge

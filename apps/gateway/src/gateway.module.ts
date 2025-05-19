@@ -1,10 +1,18 @@
 import { Module } from '@nestjs/common';
-import { GatewayController } from './gateway.controller';
-import { GatewayService } from './gateway.service';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from 'apps/auth/src/auth.module';
-import { EventModule } from 'apps/event/src/event.module';
+import { HttpModule } from '@nestjs/axios';
+import { AuthController } from './controllers/auth.controller';
+import { AuthService } from './services/auth.service';
+import { EventController } from './controllers/event.controller';
+import { EventService } from './services/event.service';
+import { GroupController } from './controllers/group.controller';
+import { GroupService } from './services/group.service';
+import { RequestController } from './controllers/request.controller';
+import { RequestService } from './services/request.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -12,10 +20,32 @@ import { EventModule } from 'apps/event/src/event.module';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGO_URI),
-    AuthModule,
-    EventModule,
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 10 * 1000,
+          limit: 5,
+        },
+      ],
+    }),
+    HttpModule,
   ],
-  controllers: [GatewayController],
-  providers: [GatewayService],
+  controllers: [
+    AuthController,
+    GroupController,
+    EventController,
+    RequestController,
+  ],
+  providers: [
+    AuthService,
+    GroupService,
+    EventService,
+    RequestService,
+    JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class GatewayModule {}

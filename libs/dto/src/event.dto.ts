@@ -8,6 +8,8 @@ Date        Author      Status      Description
 2025.05.15  이유민      Created     
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    Mongoose ref 설정 추가
+2025.05.18  이유민      Modified    코드 리팩토링
+2025.05.19  이유민      Modified    이벤트 그룹 추가
 */
 import {
   IsNumber,
@@ -25,7 +27,18 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ConditionType } from '@app/entity/event_condition.entity';
 
+export class GroupDto {
+  @ApiProperty({ description: '이벤트 그룹명' })
+  @IsString()
+  name: string;
+}
+
 export class CreateEventInfoDto {
+  @ApiProperty({ description: '이벤트 그룹 ID' })
+  @IsMongoId()
+  @IsOptional()
+  group_id?: string;
+
   @ApiProperty({ description: '이벤트 제목' })
   @IsString()
   title: string;
@@ -54,6 +67,27 @@ export class CreateRewardDto {
 }
 
 export class CreateConditionDto {
+  @ApiProperty({ description: '이벤트 조건 타입' })
+  @IsEnum(ConditionType)
+  type: ConditionType;
+
+  @ApiProperty({ description: '이벤트 달성에 필요한 아이템' })
+  @IsMongoId()
+  @IsOptional()
+  target_id?: string;
+
+  @ApiProperty({ description: '아이템 수량' })
+  @IsNumber()
+  @IsOptional()
+  quantity?: number;
+}
+
+export class UpdateConditionDto {
+  @ApiProperty({ description: '조건 ID' })
+  @IsMongoId()
+  @IsOptional()
+  condition_id?: string;
+
   @ApiProperty({ description: '이벤트 조건 타입' })
   @IsEnum(ConditionType)
   type: ConditionType;
@@ -122,13 +156,13 @@ export class UpdateEventDto {
   event: CreateEventInfoDto;
 
   @ApiProperty({
-    type: [CreateConditionDto],
+    type: [UpdateConditionDto],
     description: '이벤트 조건 정보',
   })
   @ValidateNested({ each: true })
-  @Type(() => CreateConditionDto)
+  @Type(() => UpdateConditionDto)
   @IsArray()
-  condition: CreateConditionDto[];
+  condition: UpdateConditionDto[];
 
   @ApiProperty({
     type: [UpdateRewardDto],

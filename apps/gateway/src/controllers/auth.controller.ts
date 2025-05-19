@@ -1,0 +1,74 @@
+/**
+File Name : auth.controller
+Description : auth 서버 라우팅 Controller
+Author : 이유민
+
+History
+Date        Author      Status      Description
+2025.05.17  이유민      Created     
+2025.05.17  이유민      Modified    Gateway 라우팅 추가
+2025.05.19  이유민      Modified    Swagger 문서 수정
+2025.05.20  이유민      Modified    Throttler 수정
+*/
+import { Body, Controller, Post } from '@nestjs/common';
+import { RolesGuard } from '@gateway/guards/roles.guard';
+import { JwtAuthGuard } from '@gateway/guards/auth.guard';
+import { UseGuards } from '@nestjs/common';
+import { Roles } from '@gateway/decorators/roles.decorator';
+import { UserRole } from '@app/entity';
+import { ApiBody, ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { CreateAuthDto, UpdateUserRoleDto } from '@app/dto';
+import { AuthService } from '@gateway/services/auth.service';
+import { Throttle } from '@nestjs/throttler';
+
+@Controller('auth')
+@ApiTags('회원 API')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('signup')
+  @Throttle({ default: { limit: 5, ttl: 30 * 60 * 1000 } })
+  @ApiOperation({
+    summary: '회원가입 API',
+  })
+  @ApiBody({ type: CreateAuthDto })
+  async create(
+    @Body()
+    authData: CreateAuthDto,
+  ) {
+    return this.authService.createAuth({
+      ...authData,
+    });
+  }
+
+  @Post('signin')
+  @Throttle({ default: { limit: 5, ttl: 60 * 1000 } })
+  @ApiOperation({
+    summary: '로그인 API',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string' },
+        password: { type: 'string' },
+      },
+      required: ['email', 'password'],
+    },
+  })
+  async login(
+    @Body() { email, password }: { email: string; password: string },
+  ) {
+    return this.authService.validateServiceUser(email, password);
+  }
+
+  @Post('role')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: '역할 관리 API' })
+  @ApiBearerAuth()
+  @ApiBody({ type: UpdateUserRoleDto })
+  async changeUserRole(@Body() updateDto: UpdateUserRoleDto) {
+    return this.authService.changeUserRole(updateDto);
+  }
+}
