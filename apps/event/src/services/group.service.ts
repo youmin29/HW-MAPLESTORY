@@ -7,6 +7,7 @@ History
 Date        Author      Status      Description
 2025.05.19  이유민      Created     
 2025.05.19  이유민      Modified    이벤트 그룹 추가
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import {
   BadRequestException,
@@ -30,12 +31,14 @@ export class GroupService {
     private readonly eventService: EventService,
   ) {}
 
-  async create(newData: GroupDto) {
-    return await this.groupRepository.create(newData);
+  async create(newData: GroupDto): Promise<object> {
+    await this.groupRepository.create(newData);
+    return { message: '데이터가 정상적으로 등록되었습니다.' };
   }
 
   async findAll() {
-    return await this.groupRepository.findByFilters();
+    const groupList = await this.groupRepository.findByFilters();
+    return { groupList };
   }
 
   async findOneById(id: string) {
@@ -46,14 +49,14 @@ export class GroupService {
 
     if (!groupData) throw new NotFoundException('리소스를 찾을 수 없습니다.');
 
-    const eventList = await this.eventRepository.findEventAll({
+    const eventList = await this.eventRepository.findEventbyFilters({
       group_id: groupId,
     });
 
     return { groupData, eventList };
   }
 
-  async updateById(id: string, updateData: GroupDto) {
+  async updateById(id: string, updateData: GroupDto): Promise<object> {
     validateObjectIdOrThrow(id);
 
     const groupId = new Types.ObjectId(id);
@@ -61,10 +64,10 @@ export class GroupService {
 
     if (!updated) throw new NotFoundException('리소스를 찾을 수 없습니다.');
 
-    return { message: '수정되었습니다.' };
+    return { message: '데이터가 정상적으로 수정되었습니다.' };
   }
 
-  async deleteById(id: string, cascade: string) {
+  async deleteById(id: string, cascade: string): Promise<object> {
     validateObjectIdOrThrow(id);
     const groupId = new Types.ObjectId(id);
 
@@ -77,7 +80,7 @@ export class GroupService {
         await this.groupRepository.deleteById(groupId, session);
 
         if (cascade == 'true') {
-          const eventList = await this.eventRepository.findEventAll({
+          const eventList = await this.eventRepository.findEventbyFilters({
             group_id: groupId,
           });
 
@@ -87,7 +90,7 @@ export class GroupService {
         }
       });
       await session.commitTransaction();
-      return { message: '삭제되었습니다.' };
+      return { message: '데이터가 정상적으로 삭제되었습니다.' };
     } catch (error) {
       await session.abortTransaction();
       throw error;

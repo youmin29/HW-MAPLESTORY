@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.19  이유민      Created     
 2025.05.19  이유민      Modified    이벤트 보상 요청 파일 분리
 2025.05.20  이유민      Modified    인벤토리에 보상 지급 추가
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import {
   BadRequestException,
@@ -43,7 +44,7 @@ export class RequestService {
     private readonly inventoryRepository: InventoryRepository,
   ) {}
 
-  async requestEventReward(id: string, userId: string) {
+  async requestEventReward(id: string, userId: string): Promise<object> {
     if (!userId) throw new UnauthorizedException('로그인 후 이용 가능합니다.');
 
     validateObjectIdOrThrow(id);
@@ -128,13 +129,13 @@ export class RequestService {
       [sortBy]: sortOrder,
     });
 
-    return requestList;
+    return { requestList };
   }
 
   async findUserRewardRequest(target_id: string, query: GetRequestQueryDto) {
     validateObjectIdOrThrow(target_id);
 
-    const requestList = await this.findRewardRequestAll({
+    const { requestList } = await this.findRewardRequestAll({
       ...query,
       userId: target_id,
     });

@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.18  이유민      Modified    인벤토리 추가
 2025.05.19  이유민      Modified    폴더명 수정
 2025.05.20  이유민      Modified    인벤토리에 보상 지급 추가
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -22,11 +23,11 @@ export class InventoryRepository {
   ) {}
 
   async createInven(inventoryData: Partial<Inventory>) {
-    return await new this.inventoryModel(inventoryData).save();
+    return new this.inventoryModel(inventoryData).save();
   }
 
   async findOneByFilters(filters: Partial<Inventory>) {
-    return await this.inventoryModel.findOne(filters).lean().exec();
+    return this.inventoryModel.findOne(filters).lean().exec();
   }
 
   async updateAmountByItemId(

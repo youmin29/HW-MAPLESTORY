@@ -14,6 +14,7 @@ Date        Author      Status      Description
 2025.05.19  이유민      Modified    이벤트 기간 검증 추가
 2025.05.19  이유민      Modified    이벤트 보상 요청 파일 분리
 2025.05.20  이유민      Modified    admin 외 기간 내 이벤트만 조회 가능 추가
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import {
   BadRequestException,
@@ -56,7 +57,7 @@ export class EventService {
     private readonly attendanceRepository: AttendanceRepository,
   ) {}
 
-  async create(eventAndRewardData: CreateEventDto) {
+  async create(eventAndRewardData: CreateEventDto): Promise<object> {
     const { event, condition, reward } = eventAndRewardData;
 
     // 유효성 검사
@@ -127,7 +128,7 @@ export class EventService {
         );
       });
       await session.commitTransaction();
-      return { message: '이벤트가 생성되었습니다.' };
+      return { message: '데이터가 정상적으로 등록되었습니다.' };
     } catch (error) {
       await session.abortTransaction();
       throw error;
@@ -201,7 +202,10 @@ export class EventService {
     return { eventData, groupData, rewardList, conditionList };
   }
 
-  async updateEventById(id: string, updateData: UpdateEventDto) {
+  async updateEventById(
+    id: string,
+    updateData: UpdateEventDto,
+  ): Promise<object> {
     const { event, condition, reward } = updateData;
 
     // 유효성 검사
@@ -302,7 +306,7 @@ export class EventService {
       });
 
       await session.commitTransaction();
-      return { message: '성공적으로 수정되었습니다.' };
+      return { message: '데이터가 정상적으로 수정되었습니다.' };
     } catch (error) {
       await session.abortTransaction();
       throw error;
@@ -311,7 +315,7 @@ export class EventService {
     }
   }
 
-  async deleteEventById(id: string) {
+  async deleteEventById(id: string): Promise<object> {
     validateObjectIdOrThrow(id);
     if (!(await this.eventRepository.findEventById(id)))
       throw new BadRequestException('리소스를 찾을 수 없습니다.');
@@ -333,7 +337,7 @@ export class EventService {
       });
 
       await session.commitTransaction();
-      return { message: '성공적으로 삭제되었습니다.' };
+      return { message: '데이터가 정상적으로 삭제되었습니다.' };
     } catch (error) {
       await session.abortTransaction();
       throw error;
@@ -342,7 +346,7 @@ export class EventService {
     }
   }
 
-  async createAttendance(user_id: string) {
+  async createAttendance(user_id: string): Promise<object> {
     if (!user_id) throw new UnauthorizedException('로그인 후 이용 가능합니다.');
 
     const today = new Date();
@@ -353,9 +357,11 @@ export class EventService {
     const isAttend = await this.attendanceRepository.findByToday(start, end);
     if (isAttend) throw new ConflictException('오늘은 이미 출석하셨습니다.');
 
-    return await this.attendanceRepository.createAttend({
+    await this.attendanceRepository.createAttend({
       user_id: new Types.ObjectId(user_id),
       date: new Date(),
     });
+
+    return { message: '출석 체크가 완료되었습니다.' };
   }
 }

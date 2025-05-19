@@ -10,6 +10,7 @@ Date        Author      Status      Description
 2025.05.18  이유민      Modified    트랙잭션 추가
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 2025.05.19  이유민      Modified    코드 리팩토링
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import {
   ConflictException,
@@ -46,7 +47,7 @@ export class AuthService {
     name: string;
     phone: string;
     role: string;
-  }) {
+  }): Promise<object> {
     const session = await this.connection.startSession();
     try {
       const isEmail = await this.authRepository.findOneByEmail(email);
@@ -74,7 +75,7 @@ export class AuthService {
     }
   }
 
-  async validateServiceUser(email: string, password: string): Promise<any> {
+  async validateServiceUser(email: string, password: string): Promise<object> {
     const auth = await this.authRepository.findOneByEmail(email);
 
     if (!auth)
@@ -103,7 +104,7 @@ export class AuthService {
     return { token: this.jwtService.sign(payload) };
   }
 
-  async changeUserRole(updateDto: UpdateUserRoleDto) {
+  async changeUserRole(updateDto: UpdateUserRoleDto): Promise<object> {
     const { user_id, role } = updateDto;
     const ObjectUserId = new Types.ObjectId(user_id);
 
@@ -114,6 +115,6 @@ export class AuthService {
       role,
     });
 
-    return { message: '수정되었습니다.' };
+    return { message: '데이터가 정상적으로 수정되었습니다.' };
   }
 }

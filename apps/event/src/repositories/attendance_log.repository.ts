@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.16  이유민      Modified    사용자 출석 기능 추가
 2025.05.18  이유민      Modified    출석체크 기능 추가
 2025.05.19  이유민      Modified    폴더명 수정
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -21,8 +22,8 @@ export class AttendanceRepository {
     @InjectModel(Attendance.name) private attendanceModel: Model<Attendance>,
   ) {}
 
-  async createAttend(attendData: Partial<Attendance>) {
-    return (await this.attendanceModel.create(attendData)).save();
+  async createAttend(attendData: Partial<Attendance>): Promise<Attendance> {
+    return new this.attendanceModel(attendData).save();
   }
 
   async checkAttendEvent(

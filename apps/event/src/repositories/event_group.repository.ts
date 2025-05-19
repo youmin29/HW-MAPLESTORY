@@ -8,6 +8,7 @@ Date        Author      Status      Description
 2025.05.19  이유민      Created     
 2025.05.19  이유민      Modified    이벤트 그룹 추가
 2025.05.19  이유민      Modified    폴더명 수정
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -43,6 +44,6 @@ export class GroupRepository {
     id: Types.ObjectId,
     session: ClientSession,
   ): Promise<EventGroup | null> {
-    return this.groupModel.findOneAndDelete({ _id: id }, { session });
+    return this.groupModel.findOneAndDelete({ _id: id }, { session }).exec();
   }
 }
