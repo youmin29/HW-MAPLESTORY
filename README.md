@@ -25,6 +25,7 @@
   [ERD 다이어그램 바로가기](https://www.dbdiagram.io/d/HW-MAPLESTORY-6824347d5b2fc4582f8254b3)
 
 - Postman API 문서  
+  ![Postman API 문서](./docs/postman-api-image.png)  
   [Postman API 문서 바로가기](https://www.postman.com/youmin29/hw-maplestory/documentation/80y09ux/maplestory)
 
 - Swagger API 문서  
@@ -156,7 +157,7 @@ _`item` 컬렉션에 저장된 모든 아이템을 보상으로 선택할 수 �
 - 일반 퀘스트가 아닌 **이벤트 퀘스트**에서는 특정 아이콘을 클릭하면 **현재 진행 중인(기간 내) 퀘스트만** 표시되는 부분을 반영했습니다.
 - <details>
     <summary>관련 이미지 보기</summary>
-    <img src="./docs/maplestory-event-icon.png" alt="EventGroup 설계 이유" width="100" />
+    <img src="./docs/maplestory-event-icon.png" alt="메이플스토리 이벤트 퀘스트 아이콘" width="100" />
   </details>
 
 #### 🔑 이벤트 보상 요청 API
@@ -177,7 +178,7 @@ _`item` 컬렉션에 저장된 모든 아이템을 보상으로 선택할 수 �
 - 하루에 한 번만 출석할 수 있으며, 해당 데이터를 활용해 출석 이벤트 조건을 검증합니다.
 - <details>
     <summary>관련 이미지 보기</summary>
-    <img src="./docs/maplestory-daily-gift.jpg" alt="EventGroup 설계 이유" width="400" />
+    <img src="./docs/maplestory-daily-gift.jpg" alt="메이플스토리 데일리 기프트 이미지" width="400" />
   </details>
 
 ---
