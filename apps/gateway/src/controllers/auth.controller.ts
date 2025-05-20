@@ -10,8 +10,9 @@ Date        Author      Status      Description
 2025.05.19  이유민      Modified    Swagger 문서 수정
 2025.05.20  이유민      Modified    Throttler 수정
 2025.05.20  이유민      Modified    유저 API 추가
+2025.05.20  이유민      Modified    코드 리팩토링
 */
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { RolesGuard } from '@gateway/guards/roles.guard';
 import { JwtAuthGuard } from '@gateway/guards/auth.guard';
 import { UseGuards } from '@nestjs/common';
@@ -103,7 +104,7 @@ export class AuthController {
   @ApiOperation({ summary: '인벤토리 아이템 추가 API' })
   @ApiBody({ type: CreateInventoryDto })
   @ApiBearerAuth()
-  async createInventory(@Body() createDto: CreateInventoryDto) {
-    return this.authService.createInventory(createDto);
+  async createInventory(@Body() createDto: CreateInventoryDto, @Req() req) {
+    return this.authService.createInventory(req.user.user_id, createDto);
   }
 }

@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.17  이유민      Modified    Gateway 라우팅 추가
 2025.05.19  이유민      Modified    코드 리팩토링
 2025.05.20  이유민      Modified    유저 API 추가
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -71,11 +72,11 @@ export class AuthService {
     );
   }
 
-  async createInventory(createData: CreateInventoryDto) {
+  async createInventory(user_id: string, createData: CreateInventoryDto) {
     return await sendExternalPostRequest(
       this.httpService,
       `${this.userServer}/inventory`,
-      createData,
+      { ...createData, user_id },
     );
   }
 }
