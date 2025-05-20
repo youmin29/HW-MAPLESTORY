@@ -25,7 +25,7 @@
   [ERD 다이어그램 바로가기](https://www.dbdiagram.io/d/HW-MAPLESTORY-6824347d5b2fc4582f8254b3)
 
 - Postman API 문서  
-  [Postman API 문서 바로가기](https://www.postman.com/youmin29/workspace/hw-maplestory/collection/24084460-e3dff149-4da3-4606-8c2f-dc02f34b52d9?action=share&creator=24084460)
+  [Postman API 문서 바로가기](https://www.postman.com/youmin29/hw-maplestory/documentation/80y09ux/maplestory)
 
 - Swagger API 문서  
   ![Swagger API 문서](./docs/swagger-api-image.png)  
