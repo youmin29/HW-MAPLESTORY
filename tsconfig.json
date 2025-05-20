@@ -29,7 +29,29 @@
       ],
       "@app/dto/*": [
         "libs/dto/src/*"
+      ],
+      "@auth/*": [
+        "apps/auth/src/*"
+      ],
+      "@event/*": [
+        "apps/event/src/*"
+      ],
+      "@gateway/*": [
+        "apps/gateway/src/*"
+      ],
+      "@app/*": [
+        "apps/*"
+      ],
+      "@app/utils": [
+        "libs/utils/src"
+      ],
+      "@app/utils/*": [
+        "libs/utils/src/*"
       ]
     }
-  }
+  },
+  "include": [
+    "apps/**/*",
+    "libs/**/*"
+  ]
 }
