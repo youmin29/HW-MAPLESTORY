@@ -15,6 +15,7 @@ Date        Author      Status      Description
 2025.05.19  이유민      Modified    이벤트 보상 요청 파일 분리
 2025.05.20  이유민      Modified    admin 외 기간 내 이벤트만 조회 가능 추가
 2025.05.20  이유민      Modified    코드 리팩토링
+2025.05.20  이유민      Modified    출석체크 오류 수정
 */
 import {
   BadRequestException,
@@ -349,16 +350,20 @@ export class EventService {
   async createAttendance(user_id: string): Promise<object> {
     if (!user_id) throw new UnauthorizedException('로그인 후 이용 가능합니다.');
 
+    const objectUserId = new Types.ObjectId(user_id);
     const today = new Date();
-
     const start = startOfDay(today);
     const end = endOfDay(today);
 
-    const isAttend = await this.attendanceRepository.findByToday(start, end);
+    const isAttend = await this.attendanceRepository.findByToday(
+      objectUserId,
+      start,
+      end,
+    );
     if (isAttend) throw new ConflictException('오늘은 이미 출석하셨습니다.');
 
     await this.attendanceRepository.createAttend({
-      user_id: new Types.ObjectId(user_id),
+      user_id: objectUserId,
       date: new Date(),
     });
 
