@@ -9,10 +9,12 @@ Date        Author      Status      Description
 2025.05.15  이유민      Modified    이벤트 기능 추가
 2025.05.16  이유민      Modified    Mongoose ref 설정 추가
 2025.05.19  이유민      Modified    ConditionType 수정
+2025.05.20  이유민      Modified    속성 수정
 */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { EventInfo } from './event_info.entity';
 import { Document, Types } from 'mongoose';
+import { Item } from './item.entity';
 
 export type ConditionDocument = Condition & Document;
 
@@ -29,7 +31,7 @@ export class Condition {
   @Prop({ required: true, enum: ConditionType })
   type: ConditionType;
 
-  @Prop({ type: Types.ObjectId })
+  @Prop({ type: Types.ObjectId, ref: Item.name })
   target_id?: Types.ObjectId;
 
   @Prop({})
