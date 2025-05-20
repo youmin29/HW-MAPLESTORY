@@ -12,6 +12,7 @@ Date        Author      Status      Description
 2025.05.19  이유민      Modified    코드 리팩토링
 2025.05.20  이유민      Modified    코드 리팩토링
 2025.05.20  이유민      Modified    유저 API 추가
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import {
   ConflictException,
@@ -155,10 +156,12 @@ export class AuthService {
     const isItem = await this.itemRepository.findOneById(item_id);
     if (!isItem) throw new NotFoundException('리소스를 찾을 수 없습니다.');
 
-    return await this.inventoryRepository.createInven({
+    await this.inventoryRepository.createInven({
       ...createData,
       user_id,
       item_id,
     });
+
+    return { message: '데이터가 정상적으로 등록되었습니다.' };
   }
 }
