@@ -10,6 +10,7 @@ Date        Author      Status      Description
 2025.05.18  이유민      Modified    트랙잭션 추가
 2025.05.19  이유민      Modified    Mongoose ref 설정 추가
 2025.05.20  이유민      Modified    코드 리팩토링
+2025.05.20  이유민      Modified    유저 API 추가
 */
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -25,6 +26,10 @@ export class UserRepository {
     session: ClientSession,
   ): Promise<User & { _id: Types.ObjectId }> {
     return new this.userModel(userData).save({ session });
+  }
+
+  async findUsersByFilters(filters?: Partial<User>): Promise<User[] | null> {
+    return this.userModel.find(filters).lean().exec();
   }
 
   async findOneById(id: Types.ObjectId): Promise<User | null> {
