@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.14  이유민      Modified    회원 기능 추가
 2025.05.15  이유민      Modified    코드 리팩토링
 2025.05.17  이유민      Modified    코드 리팩토링
+2025.05.20  이유민      Modified    유저 API 추가
 */
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -17,6 +18,10 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthRepository } from './repository/auth.repository';
 import { UserRepository } from './repository/user.repository';
+import { InventoryRepository } from '@event/repositories/inventory.repository';
+import { Inventory, InventorySchema } from '@app/entity/inventory.entity';
+import { ItemRepository } from '@event/repositories/item.repository';
+import { Item, ItemSchema } from '@app/entity/item.entity';
 import { Auth, AuthSchema } from '@app/entity/auth.entity';
 import { User, UserSchema } from '@app/entity/user.entity';
 import { PassportModule } from '@nestjs/passport';
@@ -32,6 +37,8 @@ import { LocalServiceStrategy } from './strategies/local-service.strategy';
     MongooseModule.forFeature([
       { name: Auth.name, schema: AuthSchema },
       { name: User.name, schema: UserSchema },
+      { name: Inventory.name, schema: InventorySchema },
+      { name: Item.name, schema: ItemSchema },
     ]),
     PassportModule.register({ session: false }),
     JwtModule.register({
@@ -44,6 +51,8 @@ import { LocalServiceStrategy } from './strategies/local-service.strategy';
     AuthService,
     AuthRepository,
     UserRepository,
+    InventoryRepository,
+    ItemRepository,
     LocalServiceStrategy,
   ],
   exports: [AuthService],

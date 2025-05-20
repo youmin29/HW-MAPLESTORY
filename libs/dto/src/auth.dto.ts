@@ -9,6 +9,7 @@ Date        Author      Status      Description
 2025.05.14  이유민      Modified    회원 기능 추가
 2025.05.15  이유민      Modified    Enum 코드 추가
 2025.05.19  이유민      Modified    Mongoose ref 설정 추가
+2025.05.20  이유민      Modified    유저 API 추가
 */
 import {
   IsEmail,
@@ -16,6 +17,7 @@ import {
   MinLength,
   IsEnum,
   IsMongoId,
+  IsNumber,
 } from 'class-validator';
 import { UserRole } from '@app/entity/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
@@ -51,4 +53,18 @@ export class UpdateUserRoleDto {
   @ApiProperty({ description: '변경할 역할' })
   @IsEnum(UserRole)
   role: UserRole;
+}
+
+export class CreateInventoryDto {
+  @ApiProperty({ description: '회원ID' })
+  @IsMongoId()
+  user_id: string;
+
+  @ApiProperty({ description: '아이템ID' })
+  @IsMongoId()
+  item_id: string;
+
+  @ApiProperty({ description: '아이템 수량' })
+  @IsNumber()
+  amount: number;
 }

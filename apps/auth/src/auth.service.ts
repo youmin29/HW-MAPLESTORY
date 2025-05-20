@@ -11,6 +11,7 @@ Date        Author      Status      Description
 2025.05.18  이유민      Modified    에러 status code 및 메세지 수정
 2025.05.19  이유민      Modified    코드 리팩토링
 2025.05.20  이유민      Modified    코드 리팩토링
+2025.05.20  이유민      Modified    유저 API 추가
 */
 import {
   ConflictException,
@@ -20,11 +21,15 @@ import {
 } from '@nestjs/common';
 import { AuthRepository } from './repository/auth.repository';
 import { UserRepository } from './repository/user.repository';
+import { InventoryRepository } from '@event/repositories/inventory.repository';
+import { ItemRepository } from '@event/repositories/item.repository';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
-import { UpdateUserRoleDto } from '@app/dto';
+import { CreateInventoryDto, UpdateUserRoleDto } from '@app/dto';
+import { User } from '@app/entity';
+import { validateObjectIdOrThrow } from '@app/utils/validation';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +38,8 @@ export class AuthService {
     private jwtService: JwtService,
     private readonly authRepository: AuthRepository,
     private readonly userRepository: UserRepository,
+    private readonly inventoryRepository: InventoryRepository,
+    private readonly itemRepository: ItemRepository,
   ) {}
 
   async create({
@@ -116,5 +123,42 @@ export class AuthService {
     });
 
     return { message: '데이터가 정상적으로 수정되었습니다.' };
+  }
+
+  async findUsersByFilters(filters?: Partial<User>) {
+    const query = {};
+
+    if (filters) {
+      for (const [key, value] of Object.entries(filters)) {
+        if (typeof value === 'string') {
+          query[key] = { $regex: value, $options: 'i' };
+        } else {
+          query[key] = value;
+        }
+      }
+    }
+    const userList = await this.userRepository.findUsersByFilters(query);
+    return { userList };
+  }
+
+  async createInventory(createData: CreateInventoryDto) {
+    if (!createData.user_id)
+      throw new UnauthorizedException('로그인 후 이용 가능합니다.');
+    validateObjectIdOrThrow(createData.user_id);
+    validateObjectIdOrThrow(createData.item_id);
+
+    const user_id = new Types.ObjectId(createData.user_id);
+    const isUser = await this.userRepository.findOneById(user_id);
+    if (!isUser) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+
+    const item_id = new Types.ObjectId(createData.item_id);
+    const isItem = await this.itemRepository.findOneById(item_id);
+    if (!isItem) throw new NotFoundException('리소스를 찾을 수 없습니다.');
+
+    return await this.inventoryRepository.createInven({
+      ...createData,
+      user_id,
+      item_id,
+    });
   }
 }
