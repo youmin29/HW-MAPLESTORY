@@ -16,6 +16,7 @@ Date        Author      Status      Description
 2025.05.20  이유민      Modified    admin 외 기간 내 이벤트만 조회 가능 추가
 2025.05.20  이유민      Modified    코드 리팩토링
 2025.05.20  이유민      Modified    출석체크 오류 수정
+2025.05.20  이유민      Modified    코드 리팩토링
 */
 import {
   BadRequestException,
@@ -145,6 +146,7 @@ export class EventService {
       query = {
         start_date: { $lte: today },
         end_date: { $gte: today },
+        status: true,
       };
     }
 
@@ -161,7 +163,8 @@ export class EventService {
 
     if (
       role !== UserRole.ADMIN &&
-      !isNowInRange(eventData.start_date, eventData.end_date)
+      (!isNowInRange(eventData.start_date, eventData.end_date) ||
+        !eventData.status)
     )
       throw new NotFoundException('리소스를 찾을 수 없습니다.');
 
